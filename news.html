@@ -270,6 +270,31 @@
       text-shadow: 0 0 18px rgba(126, 200, 255, 0.35);
     }
     /* 빨강 · 주황 강조 */
+    /* 사실 · 내 생각 */
+    .body .seg-label {
+      margin: 1.6em 0 0.55em;
+      font-size: 0.82em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #8b95a5;
+      text-align: left;
+    }
+    .body .seg-label.opinion {
+      color: #9ec5ff;
+      margin-top: 1.8em;
+    }
+    .body .seg-fact {
+      margin: 0 0 1em;
+      line-height: 2;
+      color: #d8dee6;
+    }
+    .body .seg-opinion {
+      margin: 0 0 1em;
+      line-height: 2;
+      color: #e8eef8;
+      padding-left: 0.75em;
+      border-left: 3px solid rgba(126, 200, 255, 0.55);
+    }
     .body .seg-red {
       margin: 0 0 1em;
       color: #ff6b6b;
@@ -464,11 +489,72 @@
         var afterFiller = false;
         var lastHook = "";
         var inClosing = false;
+        var shownFactLabel = false;
+        var shownOpinionLabel = false;
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
             .trim();
           if (!line) continue;
+
+          function paintColored(text, colorClass) {
+            if (colorClass === "seg-hook") {
+              out.push('<p class="seg-hook">' + text + "</p>");
+            } else if (colorClass === "seg-proverb") {
+              out.push('<p class="seg-proverb">' + text + "</p>");
+            } else if (colorClass === "seg-red") {
+              out.push('<p class="seg-red">' + text + "</p>");
+            } else if (colorClass === "seg-orange") {
+              out.push('<p class="seg-orange">' + text + "</p>");
+            } else {
+              out.push('<p class="seg">' + text + "</p>");
+            }
+          }
+
+          function takeColorPrefix(s) {
+            if (s.indexOf("«H»") === 0 || s.indexOf("&laquo;H&raquo;") === 0) {
+              return { cls: "seg-hook", text: s.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "") };
+            }
+            if (s.indexOf("«P»") === 0 || s.indexOf("&laquo;P&raquo;") === 0) {
+              return { cls: "seg-proverb", text: s.replace(/^«P»/, "").replace(/^&laquo;P&raquo;/, "") };
+            }
+            if (s.indexOf("«R»") === 0 || s.indexOf("&laquo;R&raquo;") === 0) {
+              return { cls: "seg-red", text: s.replace(/^«R»/, "").replace(/^&laquo;R&raquo;/, "") };
+            }
+            if (s.indexOf("«O»") === 0 || s.indexOf("&laquo;O&raquo;") === 0) {
+              return { cls: "seg-orange", text: s.replace(/^«O»/, "").replace(/^&laquo;O&raquo;/, "") };
+            }
+            return null;
+          }
+
+          // «F» 사실 (±강조색)
+          if (line.indexOf("«F»") === 0 || line.indexOf("&laquo;F&raquo;") === 0) {
+            var ft = line.replace(/^«F»/, "").replace(/^&laquo;F&raquo;/, "");
+            if (!shownFactLabel) {
+              out.push('<p class="seg-label">사실</p>');
+              shownFactLabel = true;
+              shownOpinionLabel = false;
+            }
+            var fc = takeColorPrefix(ft);
+            if (fc) paintColored(fc.text, fc.cls);
+            else out.push('<p class="seg-fact">' + ft + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          // «M» 내 생각 (±강조색)
+          if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
+            var mt = line.replace(/^«M»/, "").replace(/^&laquo;M&raquo;/, "");
+            if (!shownOpinionLabel) {
+              out.push('<p class="seg-label opinion">내 생각</p>');
+              shownOpinionLabel = true;
+              shownFactLabel = false;
+            }
+            var mc = takeColorPrefix(mt);
+            if (mc) paintColored(mc.text, mc.cls);
+            else out.push('<p class="seg-opinion">' + mt + "</p>");
+            afterFiller = false;
+            continue;
+          }
           // 발행 마커 «H»후킹
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = line.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "");
@@ -476,12 +562,27 @@
             out.push('<p class="seg-hook">' + hook + "</p>");
             afterFiller = false;
             inClosing = false;
+            shownFactLabel = false;
+            shownOpinionLabel = false;
             continue;
           }
-          // 증시 격언 «P» 또는 고정 문구 → 하늘색
+          // 증시 격언 «P»
           if (line.indexOf("«P»") === 0 || line.indexOf("&laquo;P&raquo;") === 0) {
             var proverb = line.replace(/^«P»/, "").replace(/^&laquo;P&raquo;/, "");
             out.push('<p class="seg-proverb">' + proverb + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          // «R» 빨강 · «O» 주황
+          if (line.indexOf("«R»") === 0 || line.indexOf("&laquo;R&raquo;") === 0) {
+            var red = line.replace(/^«R»/, "").replace(/^&laquo;R&raquo;/, "");
+            out.push('<p class="seg-red">' + red + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          if (line.indexOf("«O»") === 0 || line.indexOf("&laquo;O&raquo;") === 0) {
+            var ora = line.replace(/^«O»/, "").replace(/^&laquo;O&raquo;/, "");
+            out.push('<p class="seg-orange">' + ora + "</p>");
             afterFiller = false;
             continue;
           }
