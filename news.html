@@ -213,17 +213,17 @@
       color: #d4af37;
     }
 
-    /* 썸네일: 카드 좌우에 딱 맞춤 */
+    /* 썸네일: 가로 꽉 채우지 않고 작은 배너 */
     .thumb {
-      width: 100%;
+      display: block;
+      width: 42%;
+      max-width: 168px;
       aspect-ratio: 1 / 1;
       object-fit: cover;
-      display: block;
-      margin: 0 0 22px;
-      border-radius: 0;
+      margin: 0 auto 18px;
+      border-radius: 10px;
       background: #0f141b;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      border: 1px solid var(--line);
     }
 
     /* 본문 칼럼 */
@@ -450,7 +450,11 @@
       .body,
       .body-half { padding-left: 28px; padding-right: 28px; }
       .ad-slot { margin-left: 28px; margin-right: 28px; }
-      .thumb { margin-bottom: 28px; }
+      .thumb {
+        width: 36%;
+        max-width: 132px;
+        margin-bottom: 14px;
+      }
     }
   </style>
 </head>
@@ -584,18 +588,25 @@
             return null;
           }
 
-          if (line.indexOf("【전일 뉴욕") === 0 || line === "【전일 뉴욕증시 브리핑】") {
+          if (line.indexOf("【전일 시황】") === 0 || line.indexOf("【금일 시황】") === 0
+              || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0) {
+            if (!shownFactLabel) {
+              var fl = line.indexOf("【금일") === 0 ? "금일 시황"
+                : (line.indexOf("【전일 시황】") === 0 ? "전일 시황" : "시황");
+              out.push('<p class="seg-label">' + fl + '</p>');
+              shownFactLabel = true;
+            }
+            continue;
+          }
+          if (line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0) {
             if (!shownNyLabel) {
-              out.push('<p class="seg-label ny">전일 뉴욕증시 브리핑</p>');
+              out.push('<p class="seg-label ny">뉴욕증시 분석</p>');
               shownNyLabel = true;
             }
             continue;
           }
-          if (line.indexOf("【핵심") === 0) {
-            if (!shownFactLabel) {
-              out.push('<p class="seg-label">핵심 요약</p>');
-              shownFactLabel = true;
-            }
+          if (line.indexOf("【기타") === 0) {
+            out.push('<p class="seg-label">기타 사항</p>');
             continue;
           }
           if (line.indexOf("【증시 총평】") === 0) {
@@ -605,9 +616,9 @@
             }
             continue;
           }
-          if (line.indexOf("【내 생각】") === 0) {
+          if (line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0) {
             if (!shownOpinionLabel) {
-              out.push('<p class="seg-label opinion">내 생각</p>');
+              out.push('<p class="seg-label opinion">관리자 의견</p>');
               shownOpinionLabel = true;
             }
             continue;
@@ -681,7 +692,7 @@
           if (line.indexOf("«F»") === 0 || line.indexOf("&laquo;F&raquo;") === 0) {
             var ft = line.replace(/^«F»/, "").replace(/^&laquo;F&raquo;/, "");
             if (!shownFactLabel) {
-              out.push('<p class="seg-label">핵심 요약</p>');
+              out.push('<p class="seg-label">시황</p>');
               shownFactLabel = true;
               shownOpinionLabel = false;
             }
@@ -695,7 +706,7 @@
           if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
             var mt = line.replace(/^«M»/, "").replace(/^&laquo;M&raquo;/, "");
             if (!shownOpinionLabel) {
-              out.push('<p class="seg-label opinion">내 생각</p>');
+              out.push('<p class="seg-label opinion">관리자 의견</p>');
               shownOpinionLabel = true;
               shownFactLabel = false;
             }
