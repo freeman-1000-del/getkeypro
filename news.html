@@ -239,10 +239,10 @@
       line-break: strict;
     }
     .body .seg-label {
-      margin: 1.25em 0 0.5em;
+      margin: 1.35em 0 0.65em;
       color: #d4af37;
       font-weight: 800;
-      font-size: 1.05em;
+      font-size: 1.08em;
       line-height: 1.45;
       text-align: left;
     }
@@ -455,6 +455,7 @@
         function endsSentence(s) {
           var t = String(s || "").replace(/\s+$/g, "");
           if (!t) return true;
+          if (asSub(t) || isProverb(t)) return true;
           if (/[.!?…」』"']$/.test(t)) return true;
           if (/(습니다|습니까|입니다|합니까|지요|까요|군요|네요|죠|시다)\.?$/.test(t)) return true;
           return false;
@@ -462,12 +463,13 @@
 
         function stripMarks(s) {
           return String(s || "")
-            .replace(/^«F»|^&laquo;F&raquo;/, "")
-            .replace(/^«M»|^&laquo;M&raquo;/, "")
-            .replace(/^«H»|^&laquo;H&raquo;/, "")
-            .replace(/^«P»|^&laquo;P&raquo;/, "")
-            .replace(/^«R»|^&laquo;R&raquo;/, "")
-            .replace(/^«O»|^&laquo;O&raquo;/, "")
+            .replace(/^«F»|^&laquo;F&raquo;/g, "")
+            .replace(/^«M»|^&laquo;M&raquo;/g, "")
+            .replace(/^«H»|^&laquo;H&raquo;/g, "")
+            .replace(/^«P»|^&laquo;P&raquo;/g, "")
+            .replace(/^«R»|^&laquo;R&raquo;/g, "")
+            .replace(/^«O»|^&laquo;O&raquo;/g, "")
+            .replace(/«F»|&laquo;F&raquo;/g, "")
             .replace(/^«NY»/, "")
             .replace(/^«REVIEW»/, "")
             .trim();
@@ -478,23 +480,50 @@
           if (!m) return null;
           var lab = String(m[1]).replace(/\s+/g, " ").trim();
           if (lab === "증시총평") lab = "증시 총평";
+          if (lab === "증시단상") lab = "증시 단상";
           return "[" + lab + "]";
         }
 
-        // 1) 문장 중간 <br> 복구
+        function splitLeadingLabel(line) {
+          var m = String(line || "").trim().match(/^([\[【]\s*[^\]】]{1,40}\s*[\]】])\s*(.+)$/);
+          if (!m) return null;
+          var lab = asSub(m[1].replace(/【/g, "[").replace(/】/g, "]"));
+          if (!lab) {
+            var rawLab = m[1].replace(/【/g, "[").replace(/】/g, "]").replace(/\s+/g, " ").trim();
+            lab = rawLab;
+          }
+          return { label: lab, rest: String(m[2] || "").trim() };
+        }
+
+        // 1) 문장 중간 <br>만 복구 — 소타이틀은 절대 본문과 붙이지 않음
         var healed = [];
         var bufLine = "";
+        function pushBuf() {
+          if (bufLine) { healed.push(bufLine); bufLine = ""; }
+        }
         for (var hi = 0; hi < parts.length; hi++) {
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           if (!hl) {
-            if (bufLine) { healed.push(bufLine); bufLine = ""; }
+            pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
+            continue;
+          }
+          var split = splitLeadingLabel(hl);
+          if (split) {
+            pushBuf();
+            healed.push(split.label);
+            hl = split.rest;
+            if (!hl) continue;
+          }
+          if (asSub(hl) || isProverb(hl)) {
+            pushBuf();
+            healed.push(hl);
             continue;
           }
           if (!bufLine) {
             bufLine = hl;
-          } else if (endsSentence(bufLine) || /^[\[【]/.test(hl) || isProverb(hl) || isProverb(bufLine)) {
-            healed.push(bufLine);
+          } else if (endsSentence(bufLine) || asSub(bufLine)) {
+            pushBuf();
             bufLine = hl;
           } else {
             var last = bufLine.charAt(bufLine.length - 1);
@@ -504,9 +533,9 @@
               : (bufLine + hl);
           }
         }
-        if (bufLine) healed.push(bufLine);
+        pushBuf();
 
-        // 2) 토큰화 (격언은 따로 모아 [증시 단상] 뒤에 삽입)
+        // 2) 토큰화
         var tokens = [];
         var proverbs = [];
         var seenPr = {};
@@ -532,6 +561,12 @@
             var hn = String(hook || "").replace(/[.\s]+$/g, "").trim();
             if (titleNorm && hn && (hn === titleNorm || titleNorm.indexOf(hn) === 0)) continue;
           }
+          var split2 = splitLeadingLabel(line);
+          if (split2) {
+            tokens.push({ k: "label", v: split2.label });
+            line = split2.rest;
+            if (!line) continue;
+          }
           var t = stripMarks(line);
           if (!t) continue;
           var sub = asSub(t);
@@ -546,26 +581,31 @@
           tokens.push({ k: "text", v: t });
         }
 
-        // 3) [증시 단상] 구간 끝(다음 라벨 직전)에 격언 삽입
-        var insertAt = -1;
-        var inNote = false;
-        for (var ti = 0; ti < tokens.length; ti++) {
-          if (tokens[ti].k === "label") {
-            if (inNote) { insertAt = ti; break; }
-            inNote = (tokens[ti].v === "[증시 단상]");
-            if (inNote) insertAt = ti + 1;
-          } else if (inNote) {
-            insertAt = ti + 1;
-          }
-        }
+        // 3) 격언 → [증시 단상] 본문 뒤(다음 소타이틀 직전). 맨 앞에 단상 라벨을 만들지 않음
         if (proverbs.length) {
           var prToks = proverbs.map(function (p) { return { k: "proverb", v: p }; });
-          if (insertAt < 0) {
-            // 단상 라벨이 없으면 만들어 앞에 붙임
-            tokens = [{ k: "label", v: "[증시 단상]" }].concat(prToks).concat(tokens);
-          } else {
-            tokens = tokens.slice(0, insertAt).concat(prToks).concat(tokens.slice(insertAt));
+          var insertAt = -1;
+          var inNote = false;
+          var idxEnd = -1;
+          var idxAfterReview = -1;
+          for (var ti = 0; ti < tokens.length; ti++) {
+            if (tokens[ti].k === "label") {
+              if (tokens[ti].v === "[끝마치며]") idxEnd = ti;
+              if (inNote) { insertAt = ti; break; }
+              inNote = (tokens[ti].v === "[증시 단상]");
+              if (inNote) insertAt = ti + 1;
+              if (tokens[ti].v === "[증시 총평]") idxAfterReview = ti + 1;
+            } else if (inNote) {
+              insertAt = ti + 1;
+            } else if (tokens[ti].k === "label" && tokens[ti].v === "[증시 총평]") {
+              idxAfterReview = ti + 1;
+            }
           }
+          // 단상 구간이 있으면 그 끝, 없으면 끝마치며 직전, 없으면 총평 뒤
+          if (insertAt < 0 && idxEnd >= 0) insertAt = idxEnd;
+          if (insertAt < 0 && idxAfterReview >= 0) insertAt = idxAfterReview;
+          if (insertAt < 0) insertAt = tokens.length;
+          tokens = tokens.slice(0, insertAt).concat(prToks).concat(tokens.slice(insertAt));
         }
 
         var out = [];
