@@ -52,7 +52,7 @@
         var(--bg);
       color: var(--txt);
       font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      line-height: 1.7;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -225,35 +225,45 @@
       display: none;
     }
 
-    /* 본문: 스타일 없음. [소타이틀]만 골드 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 문장은 이어 붙임(강제 줄바꿈 없음) */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.7;
+      line-height: 1.55;
       color: #d8dee6;
       padding: 0 var(--pad) 28px;
       margin: 0;
       text-align: left;
-      word-break: normal;
-      overflow-wrap: break-word;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
     }
     .body .seg-label {
-      margin: 1em 0 0.35em;
+      margin: 0.9em 0 0.3em;
       color: #d4af37;
       font-weight: 800;
       font-size: 1.05em;
-      line-height: 1.4;
+      line-height: 1.35;
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.75em;
+      margin: 0 0 0.4em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.7;
+      line-height: 1.55;
       text-align: left;
-      white-space: pre-wrap;
+      white-space: normal;
+    }
+    .body .seg-proverb {
+      margin: 0.35em 0;
+      color: #7ec8ff;
+      font-weight: 700;
+      font-size: 1.05em;
+      line-height: 1.55;
+      text-align: left;
+      white-space: normal;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -429,12 +439,41 @@
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
         var buf = [];
-        var chartQueue = [];
+
+        function isProverb(t) {
+          var s = String(t || "");
+          return (
+            s.indexOf("오늘의 증시 격언") >= 0 ||
+            s.indexOf("소문에 사고") >= 0 ||
+            s.indexOf("뉴스에 팔아") >= 0
+          );
+        }
 
         function flush() {
           if (!buf.length) return;
-          // 섹션 본문: 줄바꿈 유지(pre-wrap), 강제 문장 절단 없음
-          out.push('<p class="seg">' + buf.join("\n") + "</p>");
+          // 빈 칸 = 문단 경계, 그 외 줄은 공백으로 이어 붙여 강제 줄바꿈 제거
+          var paras = [];
+          var cur = [];
+          for (var j = 0; j < buf.length; j++) {
+            if (buf[j] === "") {
+              if (cur.length) {
+                paras.push(cur.join(" "));
+                cur = [];
+              }
+            } else {
+              cur.push(buf[j]);
+            }
+          }
+          if (cur.length) paras.push(cur.join(" "));
+          for (var k = 0; k < paras.length; k++) {
+            var p = paras[k].replace(/\s+/g, " ").trim();
+            if (!p) continue;
+            if (isProverb(p)) {
+              out.push('<p class="seg-proverb">' + p + "</p>");
+            } else {
+              out.push('<p class="seg">' + p + "</p>");
+            }
+          }
           buf = [];
         }
 
@@ -494,6 +533,12 @@
           if (sub) {
             flush();
             out.push('<p class="seg-label">' + esc(sub) + "</p>");
+            continue;
+          }
+          // 격언 줄은 바로 하늘색 문단으로
+          if (isProverb(t)) {
+            flush();
+            out.push('<p class="seg-proverb">' + t + "</p>");
             continue;
           }
           buf.push(t);
