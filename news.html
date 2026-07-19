@@ -249,7 +249,7 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.7em;
+      margin: 0 0 0.5em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
@@ -263,13 +263,14 @@
       line-break: strict;
       hyphens: none;
     }
+    /* 원문 빈 줄 → 눈에 띄는 문단 간격 */
     .body .seg-gap {
       display: block;
-      margin: 0;
+      margin: 0.35em 0;
       padding: 0;
-      height: 0.55em;
-      min-height: 0.55em;
-      line-height: 0.55em;
+      height: 1.15em;
+      min-height: 1.15em;
+      line-height: 1.15em;
       border: 0;
       overflow: hidden;
       visibility: hidden;
@@ -302,11 +303,12 @@
         hyphens: none;
       }
       .body .seg {
-        margin-bottom: 0.75em;
+        margin-bottom: 0.55em;
       }
       .body .seg-gap {
-        height: 0.6em;
-        min-height: 0.6em;
+        height: 1.25em;
+        min-height: 1.25em;
+        margin: 0.4em 0;
       }
     }
     .mk-table-wrap {
@@ -496,12 +498,20 @@
           var t = String(s || "").replace(/\s+$/g, "");
           if (!t) return true;
           if (asSub(t) || isProverb(t)) return true;
-          // 조사·연결어미로 끝나면 미완성 (자리에는 / 날아가는 / 흘러내린)
-          if (/(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(t)) {
-            return false;
-          }
+          if (isIncomplete(t)) return false;
           if (/[.!?…」』"']$/.test(t)) return true;
-          if (/(습니다|습니까|입니다|합니다|합니까|지요|까요|군요|네요|니다|죠|시다)\.?$/.test(t)) return true;
+          if (/(습니다|습니까|입니다|합니까|합니다|지요|까요|군요|네요|니다|죠|시다|다|요|까|네|군|함|됨|임|음)\.?$/.test(t)) return true;
+          return false;
+        }
+        function isIncomplete(s) {
+          var t = String(s || "").replace(/\s+$/g, "");
+          if (!t) return false;
+          if (asSub(t) || isProverb(t)) return false;
+          if (/[.!?…」』"']$/.test(t)) return false;
+          if (/(습니다|습니까|입니다|합니까|합니다|지요|까요|군요|네요|니다|죠|시다|다|요|까|네|군|함|됨|임|음)\.?$/.test(t)) return false;
+          if (/(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|에는|으로는|로는|서는|께|께서|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(t)) return true;
+          if (/(며|고|데|던|거나|든지|도록|위해|통해|대한|위한|같은|스런|진|된|한|인|라는|했던|었던|았던)$/.test(t)) return true;
+          if (t.length <= 8) return true;
           return false;
         }
 
@@ -513,7 +523,7 @@
         }
 
         function suffixStart(s) {
-          return /^(니다|습니다|습니까|세요|시죠|죠|지요|까요|군요|네요)/.test(s);
+          return /^(니다|습니다|습니까|세요|시죠|죠|지요|까요|군요|네요|다고|라는|으며|면서)/.test(s);
         }
         function joinSoft(a, b) {
           if (!a) return b;
@@ -572,8 +582,8 @@
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
           if (!hl) {
-            // 미완성 문장 중간의 빈 줄은 무시하고 이어 붙임
-            if (bufLine && !endsSentence(bufLine) && !asSub(bufLine)) continue;
+            // 미완성 조각 중간의 빈 줄만 무시. 사람이 넣은 문단 빈 줄은 유지.
+            if (bufLine && isIncomplete(bufLine)) continue;
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
             continue;
@@ -592,6 +602,8 @@
           }
           if (!bufLine) {
             bufLine = hl;
+          } else if (isIncomplete(bufLine)) {
+            bufLine = joinSoft(bufLine, hl);
           } else if (endsSentence(bufLine) || asSub(bufLine)) {
             pushBuf();
             bufLine = hl;
@@ -600,6 +612,8 @@
           }
         }
         pushBuf();
+
+        // 1b) 빈 줄만 문단 경계        pushBuf();
 
         // 1b) 빈 줄만 문단 경계 — 연속 본문은 한 덩어리로 이어 붙임(조기 줄끊김·과한 행간 방지)
         var flowed = [];
