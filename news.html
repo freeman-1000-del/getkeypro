@@ -458,8 +458,12 @@
           var t = String(s || "").replace(/\s+$/g, "");
           if (!t) return true;
           if (asSub(t) || isProverb(t)) return true;
+          // 조사·연결어미로 끝나면 미완성 (자리에는 / 날아가는 / 흘러내린)
+          if (/(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(t)) {
+            return false;
+          }
           if (/[.!?…」』"']$/.test(t)) return true;
-          if (/(습니다|습니까|입니다|합니까|지요|까요|군요|네요|죠|시다)\.?$/.test(t)) return true;
+          if (/(습니다|습니까|입니다|합니다|합니까|지요|까요|군요|네요|니다|죠|시다)\.?$/.test(t)) return true;
           return false;
         }
 
@@ -483,12 +487,21 @@
           return a + " " + b;
         }
         function fixSpaces(s) {
-          var t = String(s || "").replace(
-            /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|을|를|은|는|의|와|과|도|만)(?=[가-힣]{2,})/g,
+          var held = [];
+          var tmp = String(s || "").replace(/주도주|대형주|중소형주|성장주|가치주|배당주|관련주/g, function (w) {
+            held.push(w);
+            return "\0H" + (held.length - 1) + "\0";
+          });
+          var t = tmp.replace(
+            /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|을|를|은|는|의)(?=[가-힣]{2,})/g,
             "$1 "
           );
           t = t.replace(/에(?![서도는야])(?=[가-힣]{2,})/g, "에 ");
-          return t.replace(/ {2,}/g, " ");
+          t = t.replace(/ {2,}/g, " ");
+          for (var hi = 0; hi < held.length; hi++) {
+            t = t.split("\0H" + hi + "\0").join(held[hi]);
+          }
+          return t;
         }
 
         function asSub(t) {
@@ -686,7 +699,7 @@
           esc(dateLabel) +
           "</span></div>" +
           (img
-            ? '<img class="thumb" src="' + esc(img) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
+            ? '<img class="thumb" src="' + esc(img) + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + esc(String(row.id || "").slice(0, 8)) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
             : "") +
           adBox("썸네일 바로 아래") +
           "<h2>" + esc(title) + "</h2>" +
