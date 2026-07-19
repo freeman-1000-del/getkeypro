@@ -470,9 +470,6 @@
             .trim();
         }
 
-        function particleEnd(s) {
-          return /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(s);
-        }
         function suffixStart(s) {
           return /^(니다|습니다|습니까|세요|시죠|죠|지요|까요|군요|네요)/.test(s);
         }
@@ -483,8 +480,7 @@
             return a + " " + b;
           }
           if (suffixStart(b)) return a + b;
-          if (particleEnd(a)) return a + " " + b;
-          return a + b;
+          return a + " " + b;
         }
         function fixSpaces(s) {
           var t = String(s || "").replace(
@@ -515,7 +511,7 @@
           return { label: lab, rest: String(m[2] || "").trim() };
         }
 
-        // 1) 문장 중간 <br>만 복구 — 소타이틀은 절대 본문과 붙이지 않음
+        // 1) 문장 중간 <br>·빈 줄 복구 — 소타이틀은 본문과 붙이지 않음
         var healed = [];
         var bufLine = "";
         function pushBuf() {
@@ -525,6 +521,8 @@
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
           if (!hl) {
+            // 문장 미완성인 채 빈 줄이면 무시하고 계속 이어 붙임
+            if (bufLine && !endsSentence(bufLine) && !asSub(bufLine)) continue;
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
             continue;
