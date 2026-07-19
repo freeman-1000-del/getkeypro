@@ -80,42 +80,43 @@
     header.brand .logo {
       display: flex;
       align-items: center;
-      line-height: 0;
-      flex-shrink: 0;
+      gap: 14px;
+      flex-shrink: 1;
+      min-width: 0;
       text-decoration: none;
+      color: inherit;
     }
     header.brand .logo img {
-      height: 120px;
+      height: 100px;
       width: auto;
-      max-width: min(320px, 72vw);
+      max-width: min(240px, 44vw);
       display: block;
       object-fit: contain;
       background: #fff;
       border-radius: 16px;
       padding: 8px 10px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+      flex-shrink: 0;
     }
-    header.brand h1.sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
+    header.brand .brand-name {
+      margin: 0;
+      font-size: clamp(1.25rem, 5vw, 1.7rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.3;
+      color: #f3f6fa;
       white-space: nowrap;
-      border: 0;
     }
     header.brand p {
       margin: 0;
       color: var(--sub);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       letter-spacing: 0.02em;
-      line-height: 1.5;
+      line-height: 1.45;
       text-align: right;
       flex-shrink: 1;
-      max-width: 42%;
+      max-width: 34%;
     }
 
     .wrap {
@@ -245,11 +246,17 @@
       header.brand .logo {
         gap: 18px;
       }
+      header.brand .logo {
+        gap: 18px;
+      }
       header.brand .logo img {
-        height: 160px;
-        max-width: 420px;
+        height: 140px;
+        max-width: 360px;
         padding: 10px 12px;
         border-radius: 18px;
+      }
+      header.brand .brand-name {
+        font-size: 2rem;
       }
       header.brand p {
         font-size: 14px;
@@ -269,12 +276,12 @@
 <body>
   <header class="brand">
     <div class="nav-inner">
-      <a class="logo" href="./news.html">
-        <img src="./moneykey-logo.png" alt="MoneyKey Report" width="1024" height="1024" />
+      <a class="logo" href="./news.html" aria-label="머니키 리포트 홈">
+        <img src="./moneykey-logo.png" alt="" width="1024" height="1024" />
+        <h1 class="brand-name">머니키 리포트</h1>
       </a>
       <p>프리미엄 금융 · 거시경제 칼럼</p>
     </div>
-    <h1 class="sr-only">MoneyKey Report</h1>
   </header>
   <div class="wrap">
     <div id="feed" class="state">불러오는 중…</div>
