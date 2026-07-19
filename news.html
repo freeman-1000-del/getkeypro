@@ -279,12 +279,12 @@
     .body .seg-proverb + .seg-closing {
       margin-top: 3.2em;
     }
-    /* 본문 ↔ 클로징 행간 (경제 등 격언 없는 글) */
+    /* 본문 끝 ↔ 클로징 첫 줄만 이격 (클로징 문장끼리는 일반 행간) */
     .body .seg-closing {
       margin: 0 0 1em;
       line-height: 2;
     }
-    .body .seg + .seg-closing,
+    .body .seg:not(.seg-closing) + .seg-closing,
     .body .seg-hook + .seg-closing {
       margin-top: 3.2em;
     }
@@ -503,12 +503,12 @@
             lastHook = line;
             continue;
           }
-          if (isClosingCue(line)) inClosing = true;
-          if (inClosing) {
+          if (isClosingCue(line) && !inClosing) {
+            inClosing = true;
             out.push('<p class="seg seg-closing">' + line + "</p>");
-          } else {
-            out.push('<p class="seg">' + line + "</p>");
+            continue;
           }
+          out.push('<p class="seg">' + line + "</p>");
         }
         return '<div class="body">' + out.join("") + "</div>";
       }
