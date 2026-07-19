@@ -203,9 +203,9 @@
     .body .seg:last-child {
       margin-bottom: 0;
     }
-    /* 다음 기사(브릿지) — 전기사와 거리만 넓힘 + 골드 */
+    /* 다음 기사 큐(골드) + 주제(흰색) */
     .body .seg-bridge {
-      margin: 3.4em 0 1.8em;
+      margin: 3.4em 0 0.55em;
       padding: 0.2em 0;
       color: #d4af37;
       font-weight: 700;
@@ -216,6 +216,16 @@
     }
     .body .seg-bridge:first-child {
       margin-top: 0.8em;
+    }
+    .body .seg-topic {
+      margin: 0 0 1.6em;
+      padding: 0;
+      color: #f3f6fa;
+      font-weight: 700;
+      font-size: 1.05em;
+      line-height: 1.55;
+      text-align: center;
+      letter-spacing: -0.02em;
     }
 
     .ad-slot {
@@ -315,17 +325,14 @@
 
       function isBridgeLine(text) {
         var t = String(text || "").trim();
-        if (
+        return (
+          t === "다음 소식 보시죠." ||
           t === "그 다음 소식 보실까요?" ||
           t === "두 번째 소식 보시죠." ||
           t === "첫 번째 소식 보시죠." ||
-          t === "첫 번째 소식입니다."
-        ) {
-          return true;
-        }
-        // 주식 2번 안내: 다음은 '…' 이야기입니다.
-        if (/^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)) return true;
-        return false;
+          t === "첫 번째 소식입니다." ||
+          /^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)
+        );
       }
 
       function decorateBody(raw) {
@@ -335,6 +342,7 @@
         }
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
+        var afterBridge = false;
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
@@ -342,8 +350,13 @@
           if (!line) continue;
           if (isBridgeLine(line)) {
             out.push('<p class="seg-bridge">' + line + "</p>");
+            afterBridge = true;
+          } else if (afterBridge) {
+            out.push('<p class="seg-topic">' + line + "</p>");
+            afterBridge = false;
           } else {
             out.push('<p class="seg">' + line + "</p>");
+            afterBridge = false;
           }
         }
         return '<div class="body">' + out.join("") + "</div>";
@@ -405,6 +418,8 @@
             if (id === "c7d0659a-e86a-4bdb-a168-9d5d66c0e3ef") return false;
             if (id === "b516cdf3-1aa8-4454-900e-a027a2bdc500") return false;
             if (id === "23f7e12b-88eb-4ba3-8289-c6288b440843") return false;
+            if (id === "33d993bc-df9b-433d-9d72-9cc8b96a3722") return false;
+            if (id === "1a9113fa-f7a2-40d0-976c-5573573b8f81") return false;
             return true;
           });
           if (!rows.length) {
