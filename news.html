@@ -599,13 +599,15 @@
           }
 
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
+              || line.indexOf("【당일 시황") === 0
               || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
               || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0) {
             if (!shownFactLabel) {
               var fl = "시황";
-              if (line.indexOf("【근일") === 0) fl = "근일 시황";
-              else if (line.indexOf("【직전") === 0 || line.indexOf("【전일") === 0) fl = "직전 시황";
-              else if (line.indexOf("【금일") === 0) fl = "시황";
+              if (line.indexOf("【당일") === 0 || line.indexOf("【금일") === 0) fl = "당일 시황";
+              else if (line.indexOf("【전일") === 0) fl = "전일 시황";
+              else if (line.indexOf("【근일") === 0) fl = "시황";
+              else if (line.indexOf("【직전") === 0) fl = "전일 시황";
               out.push('<p class="seg-label">' + fl + '</p>');
               shownFactLabel = true;
             }
@@ -855,7 +857,13 @@
 
       function sessionDateFromBody(body) {
         var s = String(body || "");
-        var m = s.match(/직전 거래일\s*(\d{4}-\d{2}-\d{2})/);
+        var m = s.match(/【당일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【전일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【금일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/직전 거래일\s*(\d{4}-\d{2}-\d{2})/);
         if (m) return m[1];
         m = s.match(/【근일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
         if (m) return m[1];
