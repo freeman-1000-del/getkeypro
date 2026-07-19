@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>MoneyKey Report</title>
-  <meta name="description" content="MoneyKey Report — 모바일 주식·경제 융합 리포트" />
+  <meta name="description" content="MoneyKey Report — 모바일 주식 리포트" />
   <meta name="robots" content="index,follow" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <!--
     =============================================================================
     MoneyKey Report 독립 뉴스룸 (/news) — getkeypro 유료 메인과 분리
@@ -283,6 +284,59 @@
       color: #9ec5ff;
       margin-top: 1.8em;
     }
+    .body .seg-label.ny {
+      color: #7ec8ff;
+    }
+    .body .seg-label.review {
+      color: #d4af37;
+    }
+    .body .seg-ny {
+      margin: 0 0 1em;
+      line-height: 2;
+      color: #c8d4e4;
+    }
+    .body .seg-review {
+      margin: 0 0 1em;
+      line-height: 2;
+      color: #e8e0c8;
+      padding-left: 0.75em;
+      border-left: 3px solid rgba(212, 175, 55, 0.5);
+    }
+    .mk-table-wrap {
+      margin: 12px var(--pad) 20px;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.22);
+    }
+    .mk-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .mk-table-wrap th,
+    .mk-table-wrap td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      color: #d8dee6;
+    }
+    .mk-table-wrap th {
+      color: #9ec5ff;
+      font-weight: 700;
+      background: rgba(126, 200, 255, 0.08);
+    }
+    .mk-chart-wrap {
+      margin: 8px var(--pad) 24px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.22);
+    }
+    .mk-chart-wrap canvas {
+      width: 100% !important;
+      max-height: 280px;
+    }
     .body .seg-fact {
       margin: 0 0 1em;
       line-height: 2;
@@ -491,6 +545,9 @@
         var inClosing = false;
         var shownFactLabel = false;
         var shownOpinionLabel = false;
+        var shownNyLabel = false;
+        var shownReviewLabel = false;
+        var chartQueue = [];
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
@@ -527,11 +584,104 @@
             return null;
           }
 
+          if (line.indexOf("【전일 뉴욕") === 0 || line === "【전일 뉴욕증시 브리핑】") {
+            if (!shownNyLabel) {
+              out.push('<p class="seg-label ny">전일 뉴욕증시 브리핑</p>');
+              shownNyLabel = true;
+            }
+            continue;
+          }
+          if (line.indexOf("【핵심") === 0) {
+            if (!shownFactLabel) {
+              out.push('<p class="seg-label">핵심 요약</p>');
+              shownFactLabel = true;
+            }
+            continue;
+          }
+          if (line.indexOf("【증시 총평】") === 0) {
+            if (!shownReviewLabel) {
+              out.push('<p class="seg-label review">증시 총평</p>');
+              shownReviewLabel = true;
+            }
+            continue;
+          }
+          if (line.indexOf("【내 생각】") === 0) {
+            if (!shownOpinionLabel) {
+              out.push('<p class="seg-label opinion">내 생각</p>');
+              shownOpinionLabel = true;
+            }
+            continue;
+          }
+
+          // 표
+          if (line.indexOf("«TABLE»") === 0) {
+            try {
+              var td = JSON.parse(line.replace(/^«TABLE»/, ""));
+              var ths = (td.headers || []).map(function (h) {
+                return "<th>" + esc(String(h)) + "</th>";
+              }).join("");
+              var trs = (td.rows || []).map(function (row) {
+                return "<tr>" + (row || []).map(function (c) {
+                  return "<td>" + esc(String(c)) + "</td>";
+                }).join("") + "</tr>";
+              }).join("");
+              out.push(
+                '<div class="mk-table-wrap">' +
+                (td.title ? '<p class="seg-label">' + esc(String(td.title)) + "</p>" : "") +
+                "<table><thead><tr>" + ths + "</tr></thead><tbody>" + trs +
+                "</tbody></table></div>"
+              );
+            } catch (e) {
+              out.push('<p class="seg">표 데이터를 표시할 수 없습니다.</p>');
+            }
+            afterFiller = false;
+            continue;
+          }
+          // 차트 (Chart.js)
+          if (line.indexOf("«CHART»") === 0) {
+            try {
+              var cd = JSON.parse(line.replace(/^«CHART»/, ""));
+              var cid = "mkc-" + Math.random().toString(36).slice(2, 9);
+              chartQueue.push({ id: cid, data: cd });
+              out.push(
+                '<div class="mk-chart-wrap">' +
+                (cd.title ? '<p class="seg-label">' + esc(String(cd.title)) + "</p>" : "") +
+                '<canvas id="' + cid + '" height="220"></canvas></div>'
+              );
+            } catch (e) {
+              out.push('<p class="seg">차트 데이터를 표시할 수 없습니다.</p>');
+            }
+            afterFiller = false;
+            continue;
+          }
+          // 뉴욕 브리핑
+          if (line.indexOf("«NY»") === 0) {
+            var nyt = line.replace(/^«NY»/, "");
+            if (!shownNyLabel) {
+              out.push('<p class="seg-label ny">전일 뉴욕증시 브리핑</p>');
+              shownNyLabel = true;
+            }
+            out.push('<p class="seg-ny">' + nyt + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          // 증시 총평
+          if (line.indexOf("«REVIEW»") === 0) {
+            var rv = line.replace(/^«REVIEW»/, "");
+            if (!shownReviewLabel) {
+              out.push('<p class="seg-label review">증시 총평</p>');
+              shownReviewLabel = true;
+            }
+            out.push('<p class="seg-review">' + rv + "</p>");
+            afterFiller = false;
+            continue;
+          }
+
           // «F» 사실 (±강조색)
           if (line.indexOf("«F»") === 0 || line.indexOf("&laquo;F&raquo;") === 0) {
             var ft = line.replace(/^«F»/, "").replace(/^&laquo;F&raquo;/, "");
             if (!shownFactLabel) {
-              out.push('<p class="seg-label">사실</p>');
+              out.push('<p class="seg-label">핵심 요약</p>');
               shownFactLabel = true;
               shownOpinionLabel = false;
             }
@@ -564,6 +714,8 @@
             inClosing = false;
             shownFactLabel = false;
             shownOpinionLabel = false;
+            shownNyLabel = false;
+            shownReviewLabel = false;
             continue;
           }
           // 증시 격언 «P»
@@ -624,6 +776,43 @@
           }
           out.push('<p class="seg">' + line + "</p>");
         }
+        setTimeout(function () {
+          (chartQueue || []).forEach(function (item) {
+            var el = document.getElementById(item.id);
+            if (!el || !window.Chart) return;
+            var d = item.data || {};
+            new Chart(el, {
+              type: d.type === "line" ? "line" : "bar",
+              data: {
+                labels: d.labels || [],
+                datasets: [
+                  {
+                    label: d.unit ? "수치(" + d.unit + ")" : "수치",
+                    data: d.values || [],
+                    backgroundColor: "rgba(61, 214, 140, 0.55)",
+                    borderColor: "#3dd68c",
+                    borderWidth: 2,
+                    tension: 0.25,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: {
+                    ticks: { color: "#8b949e" },
+                    grid: { color: "rgba(255,255,255,0.06)" },
+                  },
+                  y: {
+                    ticks: { color: "#8b949e" },
+                    grid: { color: "rgba(255,255,255,0.06)" },
+                  },
+                },
+              },
+            });
+          });
+        }, 40);
         return '<div class="body">' + out.join("") + "</div>";
       }
 
@@ -677,29 +866,19 @@
             var res = await client
               .from(table)
               .select("id,title,body,category,created_at")
+              .eq("category", "주식")
               .order("created_at", { ascending: false })
-              .limit(12);
+              .limit(6);
             if (res.error) throw res.error;
             var rows = res.data || [];
-            // 카테고리별 최신 1건만 (주식 우선 노출 위해 주식→경제 순서)
             var picked = [];
-            var seen = {};
             for (var i = 0; i < rows.length; i++) {
               var row = rows[i];
-              var cat = row.category || "";
               var t = String(row.title || "");
               if (t.indexOf("__probe__") >= 0) continue;
-              if (seen[cat]) continue;
-              if (cat !== "주식" && cat !== "경제") continue;
-              seen[cat] = true;
               picked.push(row);
-              if (seen["주식"] && seen["경제"]) break;
+              break; // 최신 주식 1건만
             }
-            // 주식이 위
-            picked.sort(function (a, b) {
-              if (a.category === b.category) return 0;
-              return a.category === "주식" ? -1 : 1;
-            });
             if (!picked.length) {
               feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
               return;
