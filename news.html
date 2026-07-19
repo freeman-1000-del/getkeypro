@@ -275,7 +275,17 @@
       margin-top: 3.2em;
     }
     /* 격언 ↔ 클로징 행간 */
-    .body .seg-proverb + .seg {
+    .body .seg-proverb + .seg,
+    .body .seg-proverb + .seg-closing {
+      margin-top: 3.2em;
+    }
+    /* 본문 ↔ 클로징 행간 (경제 등 격언 없는 글) */
+    .body .seg-closing {
+      margin: 0 0 1em;
+      line-height: 2;
+    }
+    .body .seg + .seg-closing,
+    .body .seg-hook + .seg-closing {
       margin-top: 3.2em;
     }
     .body .seg-bridge,
@@ -422,6 +432,15 @@
         return shared >= 2;
       }
 
+      function isClosingCue(line) {
+        return (
+          line === "오늘 준비한 시황 소식은 여기까지입니다." ||
+          line === "오늘 준비한 경제 흐름 소식은 여기까지입니다." ||
+          line.indexOf("오늘 준비한 시황 소식은 여기까지") === 0 ||
+          line.indexOf("오늘 준비한 경제 흐름 소식은 여기까지") === 0
+        );
+      }
+
       function decorateBody(raw) {
         var html = String(raw || "");
         if (html.indexOf("<br") < 0) {
@@ -431,6 +450,7 @@
         var out = [];
         var afterFiller = false;
         var lastHook = "";
+        var inClosing = false;
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
@@ -442,6 +462,7 @@
             lastHook = hook;
             out.push('<p class="seg-hook">' + hook + "</p>");
             afterFiller = false;
+            inClosing = false;
             continue;
           }
           // 증시 격언 «P» 또는 고정 문구 → 하늘색
@@ -482,7 +503,12 @@
             lastHook = line;
             continue;
           }
-          out.push('<p class="seg">' + line + "</p>");
+          if (isClosingCue(line)) inClosing = true;
+          if (inClosing) {
+            out.push('<p class="seg seg-closing">' + line + "</p>");
+          } else {
+            out.push('<p class="seg">' + line + "</p>");
+          }
         }
         return '<div class="body">' + out.join("") + "</div>";
       }
