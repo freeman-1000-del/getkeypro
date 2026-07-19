@@ -248,7 +248,7 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.7em;
+      margin: 0 0 0.55em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
@@ -259,6 +259,13 @@
       word-break: keep-all;
       overflow-wrap: break-word;
       line-break: auto;
+    }
+    .body .seg-gap {
+      margin: 0;
+      padding: 0;
+      height: 0.85em;
+      line-height: 0;
+      border: 0;
     }
     .body .seg-proverb {
       margin: 0.55em 0;
@@ -547,8 +554,7 @@
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
           if (!hl) {
-            // 문장 미완성인 채 빈 줄이면 무시하고 계속 이어 붙임
-            if (bufLine && !endsSentence(bufLine) && !asSub(bufLine)) continue;
+            // 편집자가 넣은 빈 줄 = 의도한 행간 (문장 완성 여부와 무관)
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
             continue;
@@ -576,13 +582,19 @@
         }
         pushBuf();
 
-        // 2) 토큰화
+        // 2) 토큰화 (빈 줄 = 행간 gap)
         var tokens = [];
         var proverbs = [];
         var seenPr = {};
         for (var i = 0; i < healed.length; i++) {
-          var line = String(healed[i] || "").trim();
-          if (!line) continue;
+          var rawLine = healed[i];
+          var line = String(rawLine || "").trim();
+          if (!line) {
+            if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
+              tokens.push({ k: "gap" });
+            }
+            continue;
+          }
           if (/^【\s*증시\s*총평/.test(line)) {
             tokens.push({ k: "label", v: "[증시 총평]" });
             continue;
@@ -654,6 +666,7 @@
           var tok = tokens[oi];
           if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
           else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
+          else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true"></p>');
           else out.push('<p class="seg">' + tok.v + "</p>");
         }
         return '<div class="body">' + out.join("") + "</div>";
