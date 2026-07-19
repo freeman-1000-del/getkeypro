@@ -203,6 +203,9 @@
       font-weight: 800;
       letter-spacing: -0.02em;
       color: #d4af37;
+      text-align: left;
+      word-break: keep-all;
+      overflow-wrap: break-word;
     }
 
     /* 썸네일: 카드 중앙, 적당한 크기 */
@@ -217,8 +220,11 @@
       background: #0f141b;
       border: 1px solid var(--line);
     }
+    .thumb.thumb-broken {
+      display: none;
+    }
 
-    /* 본문 칼럼 */
+    /* 본문 칼럼 — 좌측 정렬(가독성) */
     .body,
     .body-half {
       font-size: 18px;
@@ -229,10 +235,12 @@
       padding: 0 var(--pad) 28px;
       margin: 0;
       letter-spacing: -0.01em;
+      text-align: left;
     }
     .body .seg {
       margin: 0 0 1em;
       line-height: 2;
+      text-align: left;
     }
     .body .seg:last-child {
       margin-bottom: 0;
@@ -286,6 +294,7 @@
       margin: 0 0 1em;
       line-height: 2;
       color: #c8d4e4;
+      text-align: left;
     }
     .body .seg-review {
       margin: 0 0 1em;
@@ -293,6 +302,7 @@
       color: #e8e0c8;
       padding-left: 0.75em;
       border-left: 3px solid rgba(212, 175, 55, 0.5);
+      text-align: left;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -333,6 +343,7 @@
       margin: 0 0 1em;
       line-height: 2;
       color: #d8dee6;
+      text-align: left;
     }
     .body .seg-opinion {
       margin: 0 0 1em;
@@ -340,6 +351,7 @@
       color: #e8eef8;
       padding-left: 0.75em;
       border-left: 3px solid rgba(126, 200, 255, 0.55);
+      text-align: left;
     }
     .body .seg-opinion.empty {
       min-height: 8.5em;
@@ -897,7 +909,7 @@
           esc(dateLabel) +
           "</span></div>" +
           (img
-            ? '<img class="thumb" src="' + esc(img) + '" alt="' + esc(title) + '" loading="lazy" />'
+            ? '<img class="thumb" src="' + esc(img) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
             : "") +
           adBox("썸네일 바로 아래") +
           "<h2>" + esc(title) + "</h2>" +
