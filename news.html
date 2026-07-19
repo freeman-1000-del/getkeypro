@@ -502,14 +502,6 @@
               var subTxt = bracketSub
                 ? "[" + bracketSub[1] + "]"
                 : "[" + cornerSub[1] + "]";
-              // 디폴트 「시황」류는 숨김
-              if (
-                subTxt === "[시황]" ||
-                subTxt === "[당일 시황]" ||
-                subTxt === "[전일 시황]"
-              ) {
-                return;
-              }
               out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
               return;
             }
