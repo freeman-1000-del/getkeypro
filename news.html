@@ -147,25 +147,17 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--sub);
       margin: 0;
       padding: 18px var(--pad) 0;
     }
-    .tag {
-      padding: 8px 18px;
-      border-radius: 999px;
-      background: var(--accent-dim);
-      color: var(--accent);
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      line-height: 1.3;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(61, 214, 140, 0.25);
-      animation: tag-glow 2.4s ease-in-out infinite;
+    .session-date {
+      color: #a8b3c2;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
+    .tag { display: none; } /* 주식 뱃지 숨김 */
     .tag::after {
       content: "";
       position: absolute;
@@ -348,6 +340,21 @@
       color: #e8eef8;
       padding-left: 0.75em;
       border-left: 3px solid rgba(126, 200, 255, 0.55);
+    }
+    .body .seg-opinion.empty {
+      min-height: 8.5em;
+      margin: 0.4em 0 1.4em;
+      padding: 1.1em 1.15em;
+      border: 1px dashed rgba(158, 197, 255, 0.5);
+      border-left: 1px dashed rgba(158, 197, 255, 0.5);
+      border-radius: 12px;
+      background: rgba(126, 200, 255, 0.07);
+      color: #8fa0b5;
+      font-size: 0.95em;
+    }
+    .body .seg-label.opinion {
+      margin-top: 2.2em;
+      margin-bottom: 0.75em;
     }
     .body .seg-red {
       margin: 0 0 1em;
@@ -537,8 +544,11 @@
         );
       }
 
-      function decorateBody(raw) {
+      function decorateBody(raw, cardTitle) {
         var html = String(raw || "");
+        var titleNorm = String(cardTitle || "")
+          .replace(/[.\s]+$/g, "")
+          .trim();
         if (html.indexOf("<br") < 0) {
           html = esc(html).replace(/\n/g, "<br>");
         }
@@ -714,14 +724,23 @@
               shownFactLabel = false;
             }
             var mc = takeColorPrefix(mt);
+            var isEmptyOp = /관리자 의견을 적어|내 생각을 적어/.test(mt);
             if (mc) paintColored(mc.text, mc.cls);
-            else out.push('<p class="seg-opinion">' + mt + "</p>");
+            else if (isEmptyOp) {
+              out.push('<p class="seg-opinion empty">' + mt + "</p>");
+            } else {
+              out.push('<p class="seg-opinion">' + mt + "</p>");
+            }
             afterFiller = false;
             continue;
           }
-          // 발행 마커 «H»후킹
+          // 발행 마커 «H»후킹 — 카드 제목과 같으면 생략
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = line.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "");
+            var hookNorm = String(hook || "").replace(/[.\s]+$/g, "").trim();
+            if (titleNorm && hookNorm && (hookNorm === titleNorm || titleNorm.indexOf(hookNorm) === 0)) {
+              continue;
+            }
             lastHook = hook;
             out.push('<p class="seg-hook">' + hook + "</p>");
             afterFiller = false;
@@ -830,9 +849,26 @@
         return '<div class="body">' + out.join("") + "</div>";
       }
 
-      function bodyWithMidAd(raw) {
-        // AdSense 슬롯은 현재 비활성 — 본문만 서식 적용
-        return decorateBody(raw);
+      function bodyWithMidAd(raw, cardTitle) {
+        return decorateBody(raw, cardTitle);
+      }
+
+      function sessionDateFromBody(body) {
+        var s = String(body || "");
+        var m = s.match(/직전 거래일\s*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【근일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【직전 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : "";
+      }
+
+      function fmtSessionLabel(ymd, editionHint) {
+        if (!ymd) return "";
+        var p = ymd.split("-");
+        if (p.length !== 3) return ymd;
+        var label = editionHint === "preopen" ? "장전" : "장마감";
+        return p[0] + ". " + p[1] + ". " + p[2] + ". " + label;
       }
 
       function fmtDate(iso) {
@@ -849,17 +885,22 @@
       function cardHtml(row) {
         var title = row.title || "";
         var img = row.image_url || "";
+        var body = row.body || "";
+        var sess = sessionDateFromBody(body);
+        var dateLabel = sess
+          ? fmtSessionLabel(sess, body.indexOf("【뉴욕증시") >= 0 ? "preopen" : "close")
+          : fmtDate(row.created_at);
         return (
           '<article class="card">' +
-          '<div class="meta"><span class="tag">' +
-          esc(row.category || "주식") +
-          "</span><span>" + esc(fmtDate(row.created_at)) + "</span></div>" +
+          '<div class="meta"><span class="session-date">' +
+          esc(dateLabel) +
+          "</span></div>" +
           (img
             ? '<img class="thumb" src="' + esc(img) + '" alt="' + esc(title) + '" loading="lazy" />'
             : "") +
           adBox("썸네일 바로 아래") +
           "<h2>" + esc(title) + "</h2>" +
-          bodyWithMidAd(row.body || "") +
+          bodyWithMidAd(body, title) +
           "</article>"
         );
       }
