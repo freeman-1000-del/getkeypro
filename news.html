@@ -52,7 +52,7 @@
         var(--bg);
       color: var(--txt);
       font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      line-height: 1.65;
+      line-height: 1.7;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -225,51 +225,39 @@
       display: none;
     }
 
-    /* 본문: 복붙 그대로. 행간은 CSS로 강제 벌리지 않음. [소타이틀]만 골드 */
+    /* 본문: 스타일 없음. [소타이틀]만 골드 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.65;
+      line-height: 1.7;
       color: #d8dee6;
-      word-break: normal;
-      overflow-wrap: break-word;
-      line-break: loose;
       padding: 0 var(--pad) 28px;
       margin: 0;
-      letter-spacing: -0.01em;
+      text-align: left;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+    .body .seg-label {
+      margin: 1em 0 0.35em;
+      color: #d4af37;
+      font-weight: 800;
+      font-size: 1.05em;
+      line-height: 1.4;
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.65em;
+      margin: 0 0 0.75em;
       padding: 0;
-      line-height: 1.65;
-      font-size: 1em;
-      font-weight: 400;
       color: #d8dee6;
+      font-weight: 400;
+      font-size: 1em;
+      line-height: 1.7;
       text-align: left;
-    }
-    .body .seg:last-child {
-      margin-bottom: 0;
-    }
-    .body .seg br {
-      line-height: 1.65;
-    }
-    /* [소타이틀] — 섹션 구분용 골드만 */
-    .body .seg-label {
-      margin: 1.1em 0 0.45em;
-      font-size: 1.05em;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      color: #d4af37;
-      text-align: left;
-      line-height: 1.4;
+      white-space: pre-wrap;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
       overflow-x: auto;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(0,0,0,0.22);
     }
     .mk-table-wrap table {
       width: 100%;
@@ -278,26 +266,13 @@
     }
     .mk-table-wrap th,
     .mk-table-wrap td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       color: #d8dee6;
     }
-    .mk-table-wrap th {
-      color: #9ec5ff;
-      font-weight: 700;
-      background: rgba(126, 200, 255, 0.08);
-    }
     .mk-chart-wrap {
-      margin: 8px var(--pad) 24px;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(0,0,0,0.22);
-    }
-    .mk-chart-wrap canvas {
-      width: 100% !important;
-      max-height: 280px;
+      margin: 8px var(--pad) 20px;
     }
 
     .ad-slot {
@@ -447,17 +422,21 @@
 
       function decorateBody(raw, cardTitle) {
         var html = String(raw || "");
-        var titleNorm = String(cardTitle || "")
-          .replace(/[.\s]+$/g, "")
-          .trim();
+        var titleNorm = String(cardTitle || "").replace(/[.\s]+$/g, "").trim();
         if (html.indexOf("<br") < 0) {
           html = esc(html).replace(/\n/g, "<br>");
         }
-        // 빈 줄도 유지 → 진짜 문단 경계만 나눔
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
-        var paraBuf = [];
+        var buf = [];
         var chartQueue = [];
+
+        function flush() {
+          if (!buf.length) return;
+          // 섹션 본문: 줄바꿈 유지(pre-wrap), 강제 문장 절단 없음
+          out.push('<p class="seg">' + buf.join("\n") + "</p>");
+          buf = [];
+        }
 
         function stripMarks(s) {
           return String(s || "")
@@ -472,180 +451,54 @@
             .trim();
         }
 
-        function asGoldSubtitle(rawLine) {
-          var t = String(rawLine || "")
-            .replace(/&nbsp;/gi, " ")
-            .trim();
-          var m = t.match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
+        function asSub(t) {
+          var m = String(t || "").trim().match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
           if (!m) return null;
-          return "[" + String(m[1]).replace(/\s+/g, " ").trim() + "]";
-        }
-
-        function joinKorean(a, b) {
-          // 줄바꿈으로 쪼개진 문장을 이어 붙임 (강제 <br> 제거)
-          if (!a) return b;
-          if (!b) return a;
-          return a.replace(/\s+$/, "") + " " + b.replace(/^\s+/, "");
-        }
-
-        function flushPara() {
-          if (!paraBuf.length) return;
-          var text = paraBuf[0];
-          for (var j = 1; j < paraBuf.length; j++) {
-            text = joinKorean(text, paraBuf[j]);
-          }
-          out.push('<p class="seg">' + text + "</p>");
-          paraBuf = [];
-        }
-
-        function pushSubtitle(subTxt) {
-          flushPara();
-          out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
+          var lab = String(m[1]).replace(/\s+/g, " ").trim();
+          if (lab === "증시총평") lab = "증시 총평";
+          return "[" + lab + "]";
         }
 
         for (var i = 0; i < parts.length; i++) {
-          var line = String(parts[i] || "")
-            .replace(/&nbsp;/gi, " ")
-            .trim();
-
-          // 빈 줄 = 문단만 나눔 (문장 중간 강제개행 아님)
+          var line = String(parts[i] || "").replace(/&nbsp;/gi, " ").trim();
           if (!line) {
-            flushPara();
+            if (buf.length) buf.push("");
             continue;
           }
-
-          if (/^【\s*증시\s*총평\s*】$/.test(line) || /^\[\s*증시\s*총평\s*[\]】]$/.test(line)
-              || /^【\s*증시\s*총평\s*\]$/.test(line)) {
-            pushSubtitle("[증시 총평]");
+          if (/^【\s*증시\s*총평/.test(line)) {
+            flush();
+            out.push('<p class="seg-label">[증시 총평]</p>');
             continue;
           }
-
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
-              || line.indexOf("【당일 시황") === 0
-              || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
-              || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0
-              || line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0
-              || line.indexOf("【기타") === 0
-              || line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0
-              || line.indexOf("【코멘트】") === 0) {
+              || line.indexOf("【당일 시황") === 0 || line.indexOf("【근일 시황") === 0
+              || line.indexOf("【직전 시황") === 0 || line.indexOf("【한국 증시") === 0
+              || line.indexOf("【핵심") === 0 || line.indexOf("【뉴욕") === 0
+              || line.indexOf("【기타") === 0 || line.indexOf("【관리자") === 0
+              || line.indexOf("【내 생각") === 0 || line.indexOf("【코멘트") === 0) {
             continue;
           }
-
-          if (line.indexOf("«TABLE»") === 0) {
-            flushPara();
-            try {
-              var td = JSON.parse(line.replace(/^«TABLE»/, ""));
-              var ths = (td.headers || []).map(function (h) {
-                return "<th>" + esc(String(h)) + "</th>";
-              }).join("");
-              var trs = (td.rows || []).map(function (row) {
-                return "<tr>" + (row || []).map(function (c) {
-                  return "<td>" + esc(String(c)) + "</td>";
-                }).join("") + "</tr>";
-              }).join("");
-              out.push(
-                '<div class="mk-table-wrap">' +
-                (td.title ? '<p class="seg-label">' + esc(String(td.title)) + "</p>" : "") +
-                "<table><thead><tr>" + ths + "</tr></thead><tbody>" + trs +
-                "</tbody></table></div>"
-              );
-            } catch (e) {
-              out.push('<p class="seg">표 데이터를 표시할 수 없습니다.</p>');
-            }
+          if (line.indexOf("«TABLE»") === 0 || line.indexOf("«CHART»") === 0) {
+            flush();
             continue;
           }
-
-          if (line.indexOf("«CHART»") === 0) {
-            flushPara();
-            try {
-              var cd = JSON.parse(line.replace(/^«CHART»/, ""));
-              var cid = "mkc-" + Math.random().toString(36).slice(2, 9);
-              chartQueue.push({ id: cid, data: cd });
-              out.push(
-                '<div class="mk-chart-wrap">' +
-                (cd.title ? '<p class="seg-label">' + esc(String(cd.title)) + "</p>" : "") +
-                '<canvas id="' + cid + '" height="220"></canvas></div>'
-              );
-            } catch (e) {
-              out.push('<p class="seg">차트 데이터를 표시할 수 없습니다.</p>');
-            }
-            continue;
-          }
-
-          if (
-            line.indexOf("[MoneyKey Report] 오늘의 핵심") === 0 ||
-            line === "오늘의 핵심 금융 자산 리포트입니다." ||
-            line === "오늘의 핵심 글로벌 거시경제 리포트입니다." ||
-            isFillerCue(line)
-          ) {
-            continue;
-          }
-
+          if (isFillerCue(line) || line.indexOf("[MoneyKey Report]") === 0) continue;
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = stripMarks(line);
-            var hookNorm = String(hook || "").replace(/[.\s]+$/g, "").trim();
-            if (titleNorm && hookNorm && (hookNorm === titleNorm || titleNorm.indexOf(hookNorm) === 0)) {
-              continue;
-            }
+            var hn = String(hook || "").replace(/[.\s]+$/g, "").trim();
+            if (titleNorm && hn && (hn === titleNorm || titleNorm.indexOf(hn) === 0)) continue;
           }
-
-          if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
-            var mt0 = stripMarks(line);
-            if (!mt0 || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt0)
-                || mt0.indexOf("（여기") === 0) {
-              continue;
-            }
-          }
-
           var t = stripMarks(line);
           if (!t) continue;
-          var subTxt = asGoldSubtitle(t);
-          if (subTxt) {
-            pushSubtitle(subTxt);
+          var sub = asSub(t);
+          if (sub) {
+            flush();
+            out.push('<p class="seg-label">' + esc(sub) + "</p>");
             continue;
           }
-          // 연속 문장은 한 문단으로 이어 붙임 (강제 다음줄 금지)
-          paraBuf.push(t);
+          buf.push(t);
         }
-        flushPara();
-
-        setTimeout(function () {
-          (chartQueue || []).forEach(function (item) {
-            var el = document.getElementById(item.id);
-            if (!el || !window.Chart) return;
-            var d = item.data || {};
-            new Chart(el, {
-              type: d.type === "line" ? "line" : "bar",
-              data: {
-                labels: d.labels || [],
-                datasets: [
-                  {
-                    label: d.unit ? "수치(" + d.unit + ")" : "수치",
-                    data: d.values || [],
-                    backgroundColor: "rgba(61, 214, 140, 0.55)",
-                    borderColor: "#3dd68c",
-                    borderWidth: 2,
-                    tension: 0.25,
-                  },
-                ],
-              },
-              options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                  x: {
-                    ticks: { color: "#8b949e" },
-                    grid: { color: "rgba(255,255,255,0.06)" },
-                  },
-                  y: {
-                    ticks: { color: "#8b949e" },
-                    grid: { color: "rgba(255,255,255,0.06)" },
-                  },
-                },
-              },
-            });
-          });
-        }, 40);
+        flush();
         return '<div class="body">' + out.join("") + "</div>";
       }
 
