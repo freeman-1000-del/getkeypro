@@ -893,6 +893,11 @@
               if (t.indexOf("__probe__") >= 0) continue;
               if (t.indexOf("외 1건") >= 0) continue; // 옛 기사형 폐기
               if (t.indexOf("[삭제예정]") >= 0) continue;
+              // 가상 '금일' 샘플 폐기 — 근일/직전 시황만
+              if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【근일 시황") < 0
+                  && b.indexOf("【직전 시황") < 0) {
+                continue;
+              }
               if (b.indexOf("【금일 시황") < 0 && b.indexOf("【전일 시황") < 0
                   && b.indexOf("【근일 시황") < 0 && b.indexOf("【직전 시황") < 0
                   && b.indexOf("«F»") < 0 && b.indexOf("«REVIEW»") < 0) {
