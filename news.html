@@ -258,6 +258,17 @@
     .body .seg-hook:first-child {
       margin-top: 0.6em;
     }
+    /* 증시 격언 — 하늘색 강조 */
+    .body .seg-proverb {
+      margin: 0.85em 0;
+      color: #7ec8ff;
+      font-weight: 700;
+      font-size: 1.06em;
+      line-height: 1.55;
+      text-align: center;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 18px rgba(126, 200, 255, 0.35);
+    }
     .body .seg-bridge,
     .body .seg-topic {
       margin: 2.4em 0 1.2em;
@@ -422,6 +433,30 @@
             lastHook = hook;
             out.push('<p class="seg-hook">' + hook + "</p>");
             afterFiller = false;
+            continue;
+          }
+          // 증시 격언 «P» 또는 고정 문구 → 하늘색
+          if (line.indexOf("«P»") === 0 || line.indexOf("&laquo;P&raquo;") === 0) {
+            var proverb = line.replace(/^«P»/, "").replace(/^&laquo;P&raquo;/, "");
+            out.push('<p class="seg-proverb">' + proverb + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          if (
+            line === "오늘의 증시 격언입니다." ||
+            line === "소문에 사고 뉴스에 팔아라." ||
+            line.indexOf("소문에 사고 뉴스에 팔아라") === 0
+          ) {
+            out.push('<p class="seg-proverb">' + line + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          // 구형 장황 오프닝 숨김
+          if (
+            line.indexOf("[MoneyKey Report] 오늘의 핵심") === 0 ||
+            line === "오늘의 핵심 금융 자산 리포트입니다." ||
+            line === "오늘의 핵심 글로벌 거시경제 리포트입니다."
+          ) {
             continue;
           }
           if (isFillerCue(line)) {
