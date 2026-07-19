@@ -203,27 +203,28 @@
     .body .seg:last-child {
       margin-bottom: 0;
     }
-    /* 다음 기사 큐(골드) + 주제(흰색) */
-    .body .seg-bridge {
-      margin: 3.4em 0 0.55em;
-      padding: 0.2em 0;
+    /* 기사 시작 후킹(골드). 사족 큐는 표시하지 않음 */
+    .body .seg-hook {
+      margin: 2.4em 0 1.2em;
+      padding: 0.15em 0;
       color: #d4af37;
       font-weight: 700;
-      font-size: 1.06em;
+      font-size: 1.08em;
       line-height: 1.5;
       text-align: center;
       letter-spacing: -0.02em;
     }
-    .body .seg-bridge:first-child {
-      margin-top: 0.8em;
+    .body .seg-hook:first-child {
+      margin-top: 0.6em;
     }
+    .body .seg-bridge,
     .body .seg-topic {
-      margin: 0 0 1.6em;
-      padding: 0;
-      color: #f3f6fa;
+      margin: 2.4em 0 1.2em;
+      padding: 0.15em 0;
+      color: #d4af37;
       font-weight: 700;
-      font-size: 1.05em;
-      line-height: 1.55;
+      font-size: 1.08em;
+      line-height: 1.5;
       text-align: center;
       letter-spacing: -0.02em;
     }
@@ -323,14 +324,14 @@
         return "";
       }
 
-      function isBridgeLine(text) {
+      function isFillerCue(text) {
         var t = String(text || "").trim();
         return (
+          t === "첫 번째 소식 보시죠." ||
+          t === "첫 번째 소식입니다." ||
           t === "다음 소식 보시죠." ||
           t === "그 다음 소식 보실까요?" ||
           t === "두 번째 소식 보시죠." ||
-          t === "첫 번째 소식 보시죠." ||
-          t === "첫 번째 소식입니다." ||
           /^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)
         );
       }
@@ -342,23 +343,29 @@
         }
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
-        var afterBridge = false;
+        var afterFiller = false;
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
             .trim();
           if (!line) continue;
-          if (isBridgeLine(line)) {
-            out.push('<p class="seg-bridge">' + line + "</p>");
-            afterBridge = true;
-          } else if (afterBridge) {
-            // 첫/다음 소식 직후 주제 문장 — 흰색
-            out.push('<p class="seg-topic">' + line + "</p>");
-            afterBridge = false;
-          } else {
-            out.push('<p class="seg">' + line + "</p>");
-            afterBridge = false;
+          // 발행 마커 «H»후킹
+          if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
+            var hook = line.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "");
+            out.push('<p class="seg-hook">' + hook + "</p>");
+            afterFiller = false;
+            continue;
           }
+          if (isFillerCue(line)) {
+            afterFiller = true; // 사족 삭제, 다음 줄을 후킹으로
+            continue;
+          }
+          if (afterFiller) {
+            out.push('<p class="seg-hook">' + line + "</p>");
+            afterFiller = false;
+            continue;
+          }
+          out.push('<p class="seg">' + line + "</p>");
         }
         return '<div class="body">' + out.join("") + "</div>";
       }
@@ -421,6 +428,8 @@
             if (id === "23f7e12b-88eb-4ba3-8289-c6288b440843") return false;
             if (id === "33d993bc-df9b-433d-9d72-9cc8b96a3722") return false;
             if (id === "1a9113fa-f7a2-40d0-976c-5573573b8f81") return false;
+            if (id === "e267fc1d-0b91-4e21-8bd2-ab5ae9e6cc16") return false;
+            if (id === "c755635a-4daa-420b-8190-5f293aad9db9") return false;
             return true;
           });
           if (!rows.length) {
