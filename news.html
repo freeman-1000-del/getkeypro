@@ -225,11 +225,11 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 문장 이어 붙임·한글 중간 끊김 방지 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 작성 줄바꿈 유지 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.75;
+      line-height: 1.7;
       color: #d8dee6;
       padding: 0 var(--pad) 28px;
       margin: 0;
@@ -239,7 +239,7 @@
       line-break: auto;
     }
     .body .seg-label {
-      margin: 1.1em 0 0.45em;
+      margin: 1.15em 0 0.4em;
       color: #d4af37;
       font-weight: 800;
       font-size: 1.05em;
@@ -247,21 +247,21 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.85em;
+      margin: 0 0 0.55em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.75;
+      line-height: 1.7;
       text-align: left;
       white-space: normal;
     }
     .body .seg-proverb {
-      margin: 0.55em 0;
+      margin: 0.45em 0;
       color: #7ec8ff !important;
       font-weight: 700;
       font-size: 1.05em;
-      line-height: 1.75;
+      line-height: 1.7;
       text-align: left;
       white-space: normal;
     }
@@ -452,24 +452,14 @@
 
         function flush() {
           if (!buf.length) return;
-          // 연속 줄 = 한 문단(공백 연결), 빈 줄 = 문단 구분(행간·가독성 유지)
-          var paras = [];
-          var cur = [];
+          // 작성한 줄바꿈 유지: 각 줄을 새 문단으로 (이어 붙이지 않음)
+          var seenProverb = {};
           for (var j = 0; j < buf.length; j++) {
-            if (buf[j] === "") {
-              if (cur.length) {
-                paras.push(cur.join(" "));
-                cur = [];
-              }
-            } else {
-              cur.push(buf[j]);
-            }
-          }
-          if (cur.length) paras.push(cur.join(" "));
-          for (var k = 0; k < paras.length; k++) {
-            var p = paras[k].replace(/\s+/g, " ").trim();
+            var p = String(buf[j] || "").replace(/\s+/g, " ").trim();
             if (!p) continue;
             if (isProverb(p)) {
+              if (seenProverb[p]) continue;
+              seenProverb[p] = 1;
               out.push('<p class="seg-proverb">' + p + "</p>");
             } else {
               out.push('<p class="seg">' + p + "</p>");
@@ -536,10 +526,17 @@
             out.push('<p class="seg-label">' + esc(sub) + "</p>");
             continue;
           }
-          // 격언 줄은 바로 하늘색 문단으로
+          // 격언 줄은 바로 하늘색 (동일 문구 중복 제거)
           if (isProverb(t)) {
             flush();
-            out.push('<p class="seg-proverb">' + t + "</p>");
+            var dup = false;
+            for (var di = out.length - 1; di >= 0 && di >= out.length - 4; di--) {
+              if (out[di].indexOf("seg-proverb") >= 0 && out[di].indexOf(t) >= 0) {
+                dup = true;
+                break;
+              }
+            }
+            if (!dup) out.push('<p class="seg-proverb">' + t + "</p>");
             continue;
           }
           buf.push(t);
