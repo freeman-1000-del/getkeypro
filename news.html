@@ -402,6 +402,10 @@
             afterFiller = true; // 사족 삭제, 다음 줄을 후킹으로
             continue;
           }
+          // 후킹과 겹치는 반복 문장 제거
+          if (line === "요즘 주식 시장이 뒤숭숭하죠?") {
+            continue;
+          }
           if (afterFiller) {
             out.push('<p class="seg-hook">' + line + "</p>");
             afterFiller = false;
@@ -451,42 +455,76 @@
           feed.innerHTML = '<div class="state">CONFIG 키를 입력하세요.</div>';
           return;
         }
-        try {
-          var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-          var res = await client
-            .from(cfg.TABLE || "posts")
-            .select("id,title,body,image_url,category,created_at")
-            .order("created_at", { ascending: false })
-            .limit(40);
-          if (res.error) throw res.error;
-          var rows = (res.data || []).filter(function (row) {
-            var t = String(row.title || "");
-            var id = String(row.id || "");
-            if (t.indexOf("__probe__") >= 0) return false;
-            // 구버전 숨김
-            if (id === "a7e0cdd0-f1e1-4c60-9485-0d53d0fcf4e7") return false;
-            if (id === "c7d0659a-e86a-4bdb-a168-9d5d66c0e3ef") return false;
-            if (id === "b516cdf3-1aa8-4454-900e-a027a2bdc500") return false;
-            if (id === "23f7e12b-88eb-4ba3-8289-c6288b440843") return false;
-            if (id === "33d993bc-df9b-433d-9d72-9cc8b96a3722") return false;
-            if (id === "1a9113fa-f7a2-40d0-976c-5573573b8f81") return false;
-            if (id === "e267fc1d-0b91-4e21-8bd2-ab5ae9e6cc16") return false;
-            if (id === "c755635a-4daa-420b-8190-5f293aad9db9") return false;
-            if (id === "cd37833d-77e9-4bd7-8052-bdfd550f3248") return false;
-            if (id === "27d112a3-f431-4129-b5de-383181963da2") return false;
-            return true;
-          });
-          if (!rows.length) {
-            feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
+        var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+        var table = cfg.TABLE || "posts";
+        var attempt = 0;
+        var lastErr = null;
+        while (attempt < 3) {
+          attempt += 1;
+          try {
+            // 1) 본문만 먼저 (대용량 data-URI 썸네일 제외 → 타임아웃 방지)
+            var res = await client
+              .from(table)
+              .select("id,title,body,category,created_at")
+              .order("created_at", { ascending: false })
+              .limit(12);
+            if (res.error) throw res.error;
+            var rows = res.data || [];
+            // 카테고리별 최신 1건만 (주식 우선 노출 위해 주식→경제 순서)
+            var picked = [];
+            var seen = {};
+            for (var i = 0; i < rows.length; i++) {
+              var row = rows[i];
+              var cat = row.category || "";
+              var t = String(row.title || "");
+              if (t.indexOf("__probe__") >= 0) continue;
+              if (seen[cat]) continue;
+              if (cat !== "주식" && cat !== "경제") continue;
+              seen[cat] = true;
+              picked.push(row);
+              if (seen["주식"] && seen["경제"]) break;
+            }
+            // 주식이 위
+            picked.sort(function (a, b) {
+              if (a.category === b.category) return 0;
+              return a.category === "주식" ? -1 : 1;
+            });
+            if (!picked.length) {
+              feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
+              return;
+            }
+            // 이미지 없이 먼저 렌더
+            feed.innerHTML = picked.map(function (r) {
+              return cardHtml(Object.assign({}, r, { image_url: "" }));
+            }).join("");
+
+            // 2) 썸네일만 별도 조회
+            var ids = picked.map(function (r) { return r.id; });
+            var imgRes = await client
+              .from(table)
+              .select("id,image_url")
+              .in("id", ids);
+            if (!imgRes.error && imgRes.data) {
+              var byId = {};
+              imgRes.data.forEach(function (r) { byId[r.id] = r.image_url || ""; });
+              picked.forEach(function (r) { r.image_url = byId[r.id] || ""; });
+              feed.innerHTML = picked.map(cardHtml).join("");
+            }
             return;
+          } catch (err) {
+            lastErr = err;
+            // 타임아웃이면 짧게 재시도
+            var msg = (err && err.message) || String(err);
+            if (msg.indexOf("timeout") < 0 || attempt >= 3) break;
+            await new Promise(function (r) { setTimeout(r, 700 * attempt); });
           }
-          feed.innerHTML = rows.map(cardHtml).join("");
-        } catch (err) {
-          feed.innerHTML =
-            '<div class="state">불러오기 실패: ' +
-            esc((err && err.message) || String(err)) +
-            "</div>";
         }
+        feed.innerHTML =
+          '<div class="state">불러오기 실패: ' +
+          esc((lastErr && lastErr.message) || String(lastErr)) +
+          "<br><button type='button' id='mk-retry' style='margin-top:12px;padding:8px 14px;border-radius:10px;border:0;background:#3dd68c;color:#0d1117;font-weight:700;cursor:pointer'>다시 시도</button></div>";
+        var btn = document.getElementById("mk-retry");
+        if (btn) btn.onclick = function () { feed.innerHTML = '<div class="state">불러오는 중…</div>'; load(); };
       }
 
       load();
