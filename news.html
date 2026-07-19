@@ -224,11 +224,11 @@
       display: none;
     }
 
-    /* 본문 칼럼 — 좌측 정렬(가독성) */
+    /* 본문 칼럼 — 좌측 정렬 · 행간 여유 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 2;
+      line-height: 2.35;
       color: #d8dee6;
       word-break: keep-all;
       overflow-wrap: break-word;
@@ -238,8 +238,8 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 1em;
-      line-height: 2;
+      margin: 0 0 1.75em;
+      line-height: 2.35;
       text-align: left;
     }
     .body .seg:last-child {
@@ -272,33 +272,33 @@
     }
     /* 빨강 · 주황 강조 */
     /* 사실 · 내 생각 */
+    /* 섹션 제목: [증시총평] [증시 단상] [끝마치며] — 골드 + 위아래 행간 한 칸 더 */
     .body .seg-label {
-      margin: 1.6em 0 0.55em;
-      font-size: 0.82em;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      color: #8b95a5;
-      text-align: left;
-    }
-    .body .seg-label.opinion {
-      color: #9ec5ff;
-      margin-top: 1.8em;
-    }
-    .body .seg-label.ny {
-      color: #7ec8ff;
-    }
-    .body .seg-label.review {
+      margin: 2.8em 0 1.6em;
+      font-size: 1.06em;
+      font-weight: 800;
+      letter-spacing: 0.04em;
       color: #d4af37;
+      text-align: left;
+      line-height: 1.7;
+    }
+    .body .seg-label.opinion,
+    .body .seg-label.ny,
+    .body .seg-label.review,
+    .body .seg-label.closing {
+      color: #d4af37;
+      margin-top: 2.8em;
+      margin-bottom: 1.6em;
     }
     .body .seg-ny {
-      margin: 0 0 1em;
-      line-height: 2;
+      margin: 0 0 1.75em;
+      line-height: 2.35;
       color: #c8d4e4;
       text-align: left;
     }
     .body .seg-review {
-      margin: 0 0 1em;
-      line-height: 2;
+      margin: 0 0 1.75em;
+      line-height: 2.35;
       color: #e8e0c8;
       padding-left: 0.75em;
       border-left: 3px solid rgba(212, 175, 55, 0.5);
@@ -340,17 +340,17 @@
       max-height: 280px;
     }
     .body .seg-fact {
-      margin: 0 0 1em;
-      line-height: 2;
+      margin: 0 0 1.75em;
+      line-height: 2.35;
       color: #d8dee6;
       text-align: left;
     }
     .body .seg-opinion {
-      margin: 0 0 1em;
-      line-height: 2;
+      margin: 0 0 1.75em;
+      line-height: 2.35;
       color: #e8eef8;
       padding-left: 0.75em;
-      border-left: 3px solid rgba(126, 200, 255, 0.55);
+      border-left: 3px solid rgba(212, 175, 55, 0.45);
       text-align: left;
     }
     .body .seg-opinion.empty {
@@ -365,20 +365,20 @@
       font-size: 0.95em;
     }
     .body .seg-label.opinion {
-      margin-top: 2.2em;
-      margin-bottom: 0.75em;
+      margin-top: 2.8em;
+      margin-bottom: 1.6em;
     }
     .body .seg-red {
-      margin: 0 0 1em;
+      margin: 0 0 1.75em;
       color: #ff6b6b;
       font-weight: 700;
-      line-height: 2;
+      line-height: 2.35;
     }
     .body .seg-orange {
-      margin: 0 0 1em;
+      margin: 0 0 1.75em;
       color: #ffb020;
       font-weight: 700;
-      line-height: 2;
+      line-height: 2.35;
     }
     /* 본문 ↔ 격언 행간 */
     .body .seg + .seg-proverb,
@@ -631,7 +631,7 @@
           }
           if (line.indexOf("【증시 총평】") === 0) {
             if (!shownReviewLabel) {
-              out.push('<p class="seg-label review">증시 총평</p>');
+              out.push('<p class="seg-label review">[증시총평]</p>');
               shownReviewLabel = true;
             }
             continue;
@@ -698,7 +698,7 @@
           if (line.indexOf("«REVIEW»") === 0) {
             var rv = line.replace(/^«REVIEW»/, "");
             if (!shownReviewLabel) {
-              out.push('<p class="seg-label review">증시 총평</p>');
+              out.push('<p class="seg-label review">[증시총평]</p>');
               shownReviewLabel = true;
             }
             out.push('<p class="seg-review">' + rv + "</p>");
@@ -706,31 +706,31 @@
             continue;
           }
 
-          // «F» 사실 (±강조색)
+          // «F» 사실 (±강조색) — 「시황」 디폴트 라벨 없음
           if (line.indexOf("«F»") === 0 || line.indexOf("&laquo;F&raquo;") === 0) {
             var ft = line.replace(/^«F»/, "").replace(/^&laquo;F&raquo;/, "");
-            if (!shownFactLabel) {
-              out.push('<p class="seg-label">시황</p>');
-              shownFactLabel = true;
-              shownOpinionLabel = false;
-            }
+            shownFactLabel = true;
+            shownOpinionLabel = false;
             var fc = takeColorPrefix(ft);
             if (fc) paintColored(fc.text, fc.cls);
             else out.push('<p class="seg-fact">' + ft + "</p>");
             afterFiller = false;
             continue;
           }
-          // «M» 코멘트 — 라벨 없이 문단만 (독자에게 '관리자' 노출 금지)
+          // «M» 코멘트 → [증시 단상]
           if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
             var mt = line.replace(/^«M»/, "").replace(/^&laquo;M&raquo;/, "");
             var isEmptyOp = !mt || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt)
               || mt.indexOf("（여기") === 0;
             if (isEmptyOp) continue;
+            if (!shownOpinionLabel) {
+              out.push('<p class="seg-label opinion">[증시 단상]</p>');
+              shownOpinionLabel = true;
+            }
             var mc = takeColorPrefix(mt);
             if (mc) paintColored(mc.text, mc.cls);
             else out.push('<p class="seg-opinion">' + mt + "</p>");
             afterFiller = false;
-            shownOpinionLabel = true;
             shownFactLabel = false;
             continue;
           }
@@ -804,6 +804,7 @@
           }
           if (isClosingCue(line) && !inClosing) {
             inClosing = true;
+            out.push('<p class="seg-label closing">[끝마치며]</p>');
             out.push('<p class="seg seg-closing">' + line + "</p>");
             continue;
           }
