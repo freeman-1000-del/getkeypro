@@ -382,7 +382,11 @@
           if (res.error) throw res.error;
           var rows = (res.data || []).filter(function (row) {
             var t = String(row.title || "");
-            return t.indexOf("__probe__") < 0;
+            var id = String(row.id || "");
+            if (t.indexOf("__probe__") >= 0) return false;
+            // 구버전(최근→하룻새 수정 전) 숨김
+            if (id === "a7e0cdd0-f1e1-4c60-9485-0d53d0fcf4e7") return false;
+            return true;
           });
           if (!rows.length) {
             feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
