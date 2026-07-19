@@ -886,9 +886,16 @@
             for (var i = 0; i < rows.length; i++) {
               var row = rows[i];
               var t = String(row.title || "");
+              var b = String(row.body || "");
               if (t.indexOf("__probe__") >= 0) continue;
+              if (t.indexOf("외 1건") >= 0) continue; // 옛 기사형 폐기
+              if (t.indexOf("[삭제예정]") >= 0) continue;
+              if (b.indexOf("【금일 시황】") < 0 && b.indexOf("【전일 시황】") < 0
+                  && b.indexOf("«F»") < 0 && b.indexOf("«REVIEW»") < 0) {
+                continue; // 시황 본문 없는 글 스킵
+              }
               picked.push(row);
-              break; // 최신 주식 1건만
+              break; // 최신 시황 1건
             }
             if (!picked.length) {
               feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
@@ -899,7 +906,7 @@
               return cardHtml(Object.assign({}, r, { image_url: "" }));
             }).join("");
 
-            // 2) 썸네일만 별도 조회
+            // 2) 썸네일만 별도 조회 (data-URI·초대형 이미지는 스킵)
             var ids = picked.map(function (r) { return r.id; });
             var imgRes = await client
               .from(table)
@@ -907,7 +914,12 @@
               .in("id", ids);
             if (!imgRes.error && imgRes.data) {
               var byId = {};
-              imgRes.data.forEach(function (r) { byId[r.id] = r.image_url || ""; });
+              imgRes.data.forEach(function (r) {
+                var u = r.image_url || "";
+                // base64 data-URI는 용량·표시 모두 문제 → 무시
+                if (u.indexOf("data:") === 0) u = "";
+                byId[r.id] = u;
+              });
               picked.forEach(function (r) { r.image_url = byId[r.id] || ""; });
               feed.innerHTML = picked.map(cardHtml).join("");
             }
