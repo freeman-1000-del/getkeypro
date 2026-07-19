@@ -52,7 +52,7 @@
         var(--bg);
       color: var(--txt);
       font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      line-height: 1.75;
+      line-height: 1.65;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -225,11 +225,11 @@
       display: none;
     }
 
-    /* 본문: 스타일 최소 — 복붙 문장 그대로. [소타이틀]만 골드 */
+    /* 본문: 복붙 그대로. 행간은 CSS로 강제 벌리지 않음. [소타이틀]만 골드 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.75;
+      line-height: 1.65;
       color: #d8dee6;
       word-break: normal;
       overflow-wrap: break-word;
@@ -239,41 +239,30 @@
       letter-spacing: -0.01em;
       text-align: left;
     }
-    .body .seg,
-    .body .seg-fact,
-    .body .seg-opinion,
-    .body .seg-ny,
-    .body .seg-review,
-    .body .seg-hook,
-    .body .seg-proverb,
-    .body .seg-red,
-    .body .seg-orange,
-    .body .seg-closing,
-    .body .seg-bridge,
-    .body .seg-topic {
-      margin: 0 0 0.85em;
+    .body .seg {
+      margin: 0 0 0.65em;
       padding: 0;
-      line-height: 1.75;
+      line-height: 1.65;
       font-size: 1em;
       font-weight: 400;
       color: #d8dee6;
       text-align: left;
-      text-shadow: none;
-      border: 0;
-      background: transparent;
     }
     .body .seg:last-child {
       margin-bottom: 0;
     }
-    /* [소타이틀] 한 줄만 골드 */
+    .body .seg br {
+      line-height: 1.65;
+    }
+    /* [소타이틀] — 섹션 구분용 골드만 */
     .body .seg-label {
-      margin: 1.25em 0 0.65em;
+      margin: 1.1em 0 0.45em;
       font-size: 1.05em;
       font-weight: 800;
       letter-spacing: -0.01em;
       color: #d4af37;
       text-align: left;
-      line-height: 1.5;
+      line-height: 1.4;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -464,64 +453,73 @@
         if (html.indexOf("<br") < 0) {
           html = esc(html).replace(/\n/g, "<br>");
         }
+        // 빈 줄도 유지 → 진짜 문단 경계만 나눔
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
-        var afterFiller = false;
-        var lastHook = "";
-        var inClosing = false;
-        var shownFactLabel = false;
-        var shownOpinionLabel = false;
-        var shownNyLabel = false;
-        var shownReviewLabel = false;
+        var paraBuf = [];
         var chartQueue = [];
+
+        function stripMarks(s) {
+          return String(s || "")
+            .replace(/^«F»|^&laquo;F&raquo;/, "")
+            .replace(/^«M»|^&laquo;M&raquo;/, "")
+            .replace(/^«H»|^&laquo;H&raquo;/, "")
+            .replace(/^«P»|^&laquo;P&raquo;/, "")
+            .replace(/^«R»|^&laquo;R&raquo;/, "")
+            .replace(/^«O»|^&laquo;O&raquo;/, "")
+            .replace(/^«NY»/, "")
+            .replace(/^«REVIEW»/, "")
+            .trim();
+        }
+
+        function asGoldSubtitle(rawLine) {
+          var t = String(rawLine || "")
+            .replace(/&nbsp;/gi, " ")
+            .trim();
+          var m = t.match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
+          if (!m) return null;
+          return "[" + String(m[1]).replace(/\s+/g, " ").trim() + "]";
+        }
+
+        function joinKorean(a, b) {
+          // 줄바꿈으로 쪼개진 문장을 이어 붙임 (강제 <br> 제거)
+          if (!a) return b;
+          if (!b) return a;
+          return a.replace(/\s+$/, "") + " " + b.replace(/^\s+/, "");
+        }
+
+        function flushPara() {
+          if (!paraBuf.length) return;
+          var text = paraBuf[0];
+          for (var j = 1; j < paraBuf.length; j++) {
+            text = joinKorean(text, paraBuf[j]);
+          }
+          out.push('<p class="seg">' + text + "</p>");
+          paraBuf = [];
+        }
+
+        function pushSubtitle(subTxt) {
+          flushPara();
+          out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
+        }
+
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
             .trim();
-          if (!line) continue;
 
-          function stripMarks(s) {
-            return String(s || "")
-              .replace(/^«F»|^&laquo;F&raquo;/, "")
-              .replace(/^«M»|^&laquo;M&raquo;/, "")
-              .replace(/^«H»|^&laquo;H&raquo;/, "")
-              .replace(/^«P»|^&laquo;P&raquo;/, "")
-              .replace(/^«R»|^&laquo;R&raquo;/, "")
-              .replace(/^«O»|^&laquo;O&raquo;/, "")
-              .replace(/^«NY»/, "")
-              .replace(/^«REVIEW»/, "")
-              .trim();
-          }
-
-          function asGoldSubtitle(raw) {
-            var t = String(raw || "")
-              .replace(/&nbsp;/gi, " ")
-              .trim();
-            // [제목] · 【제목】 · 섞인 괄호 [제목】 / 【제목]
-            var m = t.match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
-            if (!m) return null;
-            return "[" + String(m[1]).replace(/\s+/g, " ").trim() + "]";
-          }
-
-          function pushPlain(text) {
-            var t = stripMarks(text);
-            if (!t) return;
-            var subTxt = asGoldSubtitle(t);
-            if (subTxt) {
-              out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
-              return;
-            }
-            out.push('<p class="seg">' + t + "</p>");
-          }
-
-          // GPT 구조 헤더 【증시 총평】 → 골드 소타이틀로 표시
-          if (/^【\s*증시\s*총평\s*】$/.test(line) || /^\[\s*증시\s*총평\s*[\]】]$/.test(line)
-              || /^【\s*증시\s*총평\s*\]$/.test(line)) {
-            out.push('<p class="seg-label">' + esc("[증시 총평]") + "</p>");
+          // 빈 줄 = 문단만 나눔 (문장 중간 강제개행 아님)
+          if (!line) {
+            flushPara();
             continue;
           }
 
-          // 그 외 구조 헤더·관리 라벨 — 표시 안 함
+          if (/^【\s*증시\s*총평\s*】$/.test(line) || /^\[\s*증시\s*총평\s*[\]】]$/.test(line)
+              || /^【\s*증시\s*총평\s*\]$/.test(line)) {
+            pushSubtitle("[증시 총평]");
+            continue;
+          }
+
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
               || line.indexOf("【당일 시황") === 0
               || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
@@ -533,8 +531,8 @@
             continue;
           }
 
-          // 표
           if (line.indexOf("«TABLE»") === 0) {
+            flushPara();
             try {
               var td = JSON.parse(line.replace(/^«TABLE»/, ""));
               var ths = (td.headers || []).map(function (h) {
@@ -556,8 +554,9 @@
             }
             continue;
           }
-          // 차트
+
           if (line.indexOf("«CHART»") === 0) {
+            flushPara();
             try {
               var cd = JSON.parse(line.replace(/^«CHART»/, ""));
               var cid = "mkc-" + Math.random().toString(36).slice(2, 9);
@@ -573,7 +572,6 @@
             continue;
           }
 
-          // 구형 장황 오프닝·사족 숨김
           if (
             line.indexOf("[MoneyKey Report] 오늘의 핵심") === 0 ||
             line === "오늘의 핵심 금융 자산 리포트입니다." ||
@@ -583,7 +581,6 @@
             continue;
           }
 
-          // «H»가 카드 제목과 같으면 생략
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = stripMarks(line);
             var hookNorm = String(hook || "").replace(/[.\s]+$/g, "").trim();
@@ -592,7 +589,6 @@
             }
           }
 
-          // 빈 코멘트 플레이스홀더 숨김
           if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
             var mt0 = stripMarks(line);
             if (!mt0 || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt0)
@@ -601,9 +597,18 @@
             }
           }
 
-          // 그 외: 마커 벗기고 일반 문단. [소타이틀]만 골드
-          pushPlain(line);
+          var t = stripMarks(line);
+          if (!t) continue;
+          var subTxt = asGoldSubtitle(t);
+          if (subTxt) {
+            pushSubtitle(subTxt);
+            continue;
+          }
+          // 연속 문장은 한 문단으로 이어 붙임 (강제 다음줄 금지)
+          paraBuf.push(t);
         }
+        flushPara();
+
         setTimeout(function () {
           (chartQueue || []).forEach(function (item) {
             var el = document.getElementById(item.id);
