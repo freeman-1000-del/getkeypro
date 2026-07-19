@@ -631,11 +631,9 @@
             }
             continue;
           }
-          if (line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0) {
-            if (!shownOpinionLabel) {
-              out.push('<p class="seg-label opinion">관리자 의견</p>');
-              shownOpinionLabel = true;
-            }
+          if (line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0
+              || line.indexOf("【코멘트】") === 0) {
+            // 독자에게 라벨 노출하지 않음
             continue;
           }
 
@@ -717,23 +715,18 @@
             afterFiller = false;
             continue;
           }
-          // «M» 내 생각 (±강조색)
+          // «M» 코멘트 — 라벨 없이 문단만 (독자에게 '관리자' 노출 금지)
           if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
             var mt = line.replace(/^«M»/, "").replace(/^&laquo;M&raquo;/, "");
-            if (!shownOpinionLabel) {
-              out.push('<p class="seg-label opinion">관리자 의견</p>');
-              shownOpinionLabel = true;
-              shownFactLabel = false;
-            }
+            var isEmptyOp = !mt || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt)
+              || mt.indexOf("（여기") === 0;
+            if (isEmptyOp) continue;
             var mc = takeColorPrefix(mt);
-            var isEmptyOp = /관리자 의견을 적어|내 생각을 적어/.test(mt);
             if (mc) paintColored(mc.text, mc.cls);
-            else if (isEmptyOp) {
-              out.push('<p class="seg-opinion empty">' + mt + "</p>");
-            } else {
-              out.push('<p class="seg-opinion">' + mt + "</p>");
-            }
+            else out.push('<p class="seg-opinion">' + mt + "</p>");
             afterFiller = false;
+            shownOpinionLabel = true;
+            shownFactLabel = false;
             continue;
           }
           // 발행 마커 «H»후킹 — 카드 제목과 같으면 생략
@@ -942,12 +935,14 @@
               if (t.indexOf("__probe__") >= 0) continue;
               if (t.indexOf("외 1건") >= 0) continue; // 옛 기사형 폐기
               if (t.indexOf("[삭제예정]") >= 0) continue;
-              // 가상 '금일' 샘플 폐기 — 근일/직전 시황만
-              if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【근일 시황") < 0
+              // 가상 '금일'만 있고 당일/전일 구조가 없으면 스킵(옛 샘플)
+              if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【당일 시황") < 0
+                  && b.indexOf("【전일 시황") < 0 && b.indexOf("【근일 시황") < 0
                   && b.indexOf("【직전 시황") < 0) {
                 continue;
               }
-              if (b.indexOf("【금일 시황") < 0 && b.indexOf("【전일 시황") < 0
+              if (b.indexOf("【금일 시황") < 0 && b.indexOf("【당일 시황") < 0
+                  && b.indexOf("【전일 시황") < 0
                   && b.indexOf("【근일 시황") < 0 && b.indexOf("【직전 시황") < 0
                   && b.indexOf("«F»") < 0 && b.indexOf("«REVIEW»") < 0) {
                 continue; // 시황 본문 없는 글 스킵
