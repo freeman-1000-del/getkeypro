@@ -266,11 +266,11 @@
     /* 원문 빈 줄 → 눈에 띄는 문단 간격 */
     .body .seg-gap {
       display: block;
-      margin: 0.35em 0;
+      margin: 0.5em 0;
       padding: 0;
-      height: 1.15em;
-      min-height: 1.15em;
-      line-height: 1.15em;
+      height: 1.35em;
+      min-height: 1.35em;
+      line-height: 1.35em;
       border: 0;
       overflow: hidden;
       visibility: hidden;
@@ -482,6 +482,8 @@
         if (html.indexOf("<br") < 0) {
           html = esc(html).replace(/\n/g, "<br>");
         }
+        // data-pbrk = 사람이 넣은 문단 빈 줄(절대 이어 붙이지 않음)
+        html = html.replace(/<br[^>]*data-pbrk[^>]*>/gi, "<br>§§<br>");
         var parts = html.split(/<br\s*\/?>/i);
 
         function isProverb(t) {
@@ -511,7 +513,6 @@
           if (/(습니다|습니까|입니다|합니까|합니다|지요|까요|군요|네요|니다|죠|시다|다|요|까|네|군|함|됨|임|음)\.?$/.test(t)) return false;
           if (/(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|에는|으로는|로는|서는|께|께서|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(t)) return true;
           if (/(며|고|데|던|거나|든지|도록|위해|통해|대한|위한|같은|스런|진|된|한|인|라는|했던|었던|았던)$/.test(t)) return true;
-          if (t.length <= 8) return true;
           return false;
         }
 
@@ -581,11 +582,11 @@
         for (var hi = 0; hi < parts.length; hi++) {
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
-          if (!hl) {
-            // 미완성 조각 중간의 빈 줄만 무시. 사람이 넣은 문단 빈 줄은 유지.
-            if (bufLine && isIncomplete(bufLine)) continue;
+          if (!hl || hl === "§§") {
+            // §§ = 사람 문단 간격(절대 삭제). 조사 미완성만 빈 줄 너머로 이음.
+            if (hl !== "§§" && bufLine && isIncomplete(bufLine)) continue;
             pushBuf();
-            if (healed.length && healed[healed.length - 1] !== "") healed.push("");
+            if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
             continue;
           }
           var split = splitLeadingLabel(hl);
@@ -613,9 +614,7 @@
         }
         pushBuf();
 
-        // 1b) 빈 줄만 문단 경계        pushBuf();
-
-        // 1b) 빈 줄만 문단 경계 — 연속 본문은 한 덩어리로 이어 붙임(조기 줄끊김·과한 행간 방지)
+        // 1b) §§/빈 줄만 문단 경계 — 연속 본문은 한 덩어리로 이어 붙임
         var flowed = [];
         var flowBuf = [];
         function pushFlow() {
@@ -625,9 +624,9 @@
         }
         for (var fi = 0; fi < healed.length; fi++) {
           var fl = String(healed[fi] || "").trim();
-          if (!fl) {
+          if (!fl || fl === "§§") {
             pushFlow();
-            if (flowed.length && flowed[flowed.length - 1] !== "") flowed.push("");
+            if (flowed.length && flowed[flowed.length - 1] !== "§§") flowed.push("§§");
             continue;
           }
           if (asSub(fl) || isProverb(fl)) {
@@ -647,7 +646,7 @@
         for (var i = 0; i < healed.length; i++) {
           var rawLine = healed[i];
           var line = String(rawLine || "").trim();
-          if (!line) {
+          if (!line || line === "§§") {
             if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
               tokens.push({ k: "gap" });
             }
