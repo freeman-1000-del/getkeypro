@@ -225,45 +225,49 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 작성 줄바꿈 유지 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 한글 단어 중간 끊김 방지 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.7;
+      line-height: 1.85;
       color: #d8dee6;
       padding: 0 var(--pad) 28px;
       margin: 0;
       text-align: left;
       word-break: keep-all;
-      overflow-wrap: break-word;
-      line-break: auto;
+      overflow-wrap: normal;
+      line-break: strict;
     }
     .body .seg-label {
-      margin: 1.15em 0 0.4em;
+      margin: 1.25em 0 0.5em;
       color: #d4af37;
       font-weight: 800;
       font-size: 1.05em;
-      line-height: 1.4;
+      line-height: 1.45;
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.55em;
+      margin: 0 0 0.7em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.7;
+      line-height: 1.85;
       text-align: left;
       white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: normal;
     }
     .body .seg-proverb {
-      margin: 0.45em 0;
+      margin: 0.55em 0;
       color: #7ec8ff !important;
       font-weight: 700;
       font-size: 1.05em;
-      line-height: 1.7;
+      line-height: 1.85;
       text-align: left;
       white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: normal;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -437,8 +441,6 @@
           html = esc(html).replace(/\n/g, "<br>");
         }
         var parts = html.split(/<br\s*\/?>/i);
-        var out = [];
-        var buf = [];
 
         function isProverb(t) {
           var s = String(t || "");
@@ -450,22 +452,12 @@
           );
         }
 
-        function flush() {
-          if (!buf.length) return;
-          // 작성한 줄바꿈 유지: 각 줄을 새 문단으로 (이어 붙이지 않음)
-          var seenProverb = {};
-          for (var j = 0; j < buf.length; j++) {
-            var p = String(buf[j] || "").replace(/\s+/g, " ").trim();
-            if (!p) continue;
-            if (isProverb(p)) {
-              if (seenProverb[p]) continue;
-              seenProverb[p] = 1;
-              out.push('<p class="seg-proverb">' + p + "</p>");
-            } else {
-              out.push('<p class="seg">' + p + "</p>");
-            }
-          }
-          buf = [];
+        function endsSentence(s) {
+          var t = String(s || "").replace(/\s+$/g, "");
+          if (!t) return true;
+          if (/[.!?…」』"']$/.test(t)) return true;
+          if (/(습니다|습니까|입니다|합니까|지요|까요|군요|네요|죠|시다)\.?$/.test(t)) return true;
+          return false;
         }
 
         function stripMarks(s) {
@@ -489,15 +481,40 @@
           return "[" + lab + "]";
         }
 
-        for (var i = 0; i < parts.length; i++) {
-          var line = String(parts[i] || "").replace(/&nbsp;/gi, " ").trim();
-          if (!line) {
-            if (buf.length) buf.push("");
+        // 1) 문장 중간 <br> 복구
+        var healed = [];
+        var bufLine = "";
+        for (var hi = 0; hi < parts.length; hi++) {
+          var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
+          if (!hl) {
+            if (bufLine) { healed.push(bufLine); bufLine = ""; }
+            if (healed.length && healed[healed.length - 1] !== "") healed.push("");
             continue;
           }
+          if (!bufLine) {
+            bufLine = hl;
+          } else if (endsSentence(bufLine) || /^[\[【]/.test(hl) || isProverb(hl) || isProverb(bufLine)) {
+            healed.push(bufLine);
+            bufLine = hl;
+          } else {
+            var last = bufLine.charAt(bufLine.length - 1);
+            var first = hl.charAt(0);
+            bufLine = (/[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first))
+              ? (bufLine + " " + hl)
+              : (bufLine + hl);
+          }
+        }
+        if (bufLine) healed.push(bufLine);
+
+        // 2) 토큰화 (격언은 따로 모아 [증시 단상] 뒤에 삽입)
+        var tokens = [];
+        var proverbs = [];
+        var seenPr = {};
+        for (var i = 0; i < healed.length; i++) {
+          var line = String(healed[i] || "").trim();
+          if (!line) continue;
           if (/^【\s*증시\s*총평/.test(line)) {
-            flush();
-            out.push('<p class="seg-label">[증시 총평]</p>');
+            tokens.push({ k: "label", v: "[증시 총평]" });
             continue;
           }
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
@@ -508,10 +525,7 @@
               || line.indexOf("【내 생각") === 0 || line.indexOf("【코멘트") === 0) {
             continue;
           }
-          if (line.indexOf("«TABLE»") === 0 || line.indexOf("«CHART»") === 0) {
-            flush();
-            continue;
-          }
+          if (line.indexOf("«TABLE»") === 0 || line.indexOf("«CHART»") === 0) continue;
           if (isFillerCue(line) || line.indexOf("[MoneyKey Report]") === 0) continue;
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = stripMarks(line);
@@ -522,26 +536,45 @@
           if (!t) continue;
           var sub = asSub(t);
           if (sub) {
-            flush();
-            out.push('<p class="seg-label">' + esc(sub) + "</p>");
+            tokens.push({ k: "label", v: sub });
             continue;
           }
-          // 격언 줄은 바로 하늘색 (동일 문구 중복 제거)
           if (isProverb(t)) {
-            flush();
-            var dup = false;
-            for (var di = out.length - 1; di >= 0 && di >= out.length - 4; di--) {
-              if (out[di].indexOf("seg-proverb") >= 0 && out[di].indexOf(t) >= 0) {
-                dup = true;
-                break;
-              }
-            }
-            if (!dup) out.push('<p class="seg-proverb">' + t + "</p>");
+            if (!seenPr[t]) { seenPr[t] = 1; proverbs.push(t); }
             continue;
           }
-          buf.push(t);
+          tokens.push({ k: "text", v: t });
         }
-        flush();
+
+        // 3) [증시 단상] 구간 끝(다음 라벨 직전)에 격언 삽입
+        var insertAt = -1;
+        var inNote = false;
+        for (var ti = 0; ti < tokens.length; ti++) {
+          if (tokens[ti].k === "label") {
+            if (inNote) { insertAt = ti; break; }
+            inNote = (tokens[ti].v === "[증시 단상]");
+            if (inNote) insertAt = ti + 1;
+          } else if (inNote) {
+            insertAt = ti + 1;
+          }
+        }
+        if (proverbs.length) {
+          var prToks = proverbs.map(function (p) { return { k: "proverb", v: p }; });
+          if (insertAt < 0) {
+            // 단상 라벨이 없으면 만들어 앞에 붙임
+            tokens = [{ k: "label", v: "[증시 단상]" }].concat(prToks).concat(tokens);
+          } else {
+            tokens = tokens.slice(0, insertAt).concat(prToks).concat(tokens.slice(insertAt));
+          }
+        }
+
+        var out = [];
+        for (var oi = 0; oi < tokens.length; oi++) {
+          var tok = tokens[oi];
+          if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
+          else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
+          else out.push('<p class="seg">' + tok.v + "</p>");
+        }
         return '<div class="body">' + out.join("") + "</div>";
       }
 
