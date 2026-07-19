@@ -335,6 +335,16 @@
         );
       }
 
+      function isSecondBridgeLine(text) {
+        var t = String(text || "").trim();
+        return (
+          t === "다음 소식 보시죠." ||
+          t === "그 다음 소식 보실까요?" ||
+          t === "두 번째 소식 보시죠." ||
+          /^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)
+        );
+      }
+
       function decorateBody(raw) {
         var html = String(raw || "");
         if (html.indexOf("<br") < 0) {
@@ -342,7 +352,7 @@
         }
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
-        var afterBridge = false;
+        var afterSecondBridge = false;
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
@@ -350,13 +360,13 @@
           if (!line) continue;
           if (isBridgeLine(line)) {
             out.push('<p class="seg-bridge">' + line + "</p>");
-            afterBridge = true;
-          } else if (afterBridge) {
+            afterSecondBridge = isSecondBridgeLine(line);
+          } else if (afterSecondBridge) {
             out.push('<p class="seg-topic">' + line + "</p>");
-            afterBridge = false;
+            afterSecondBridge = false;
           } else {
             out.push('<p class="seg">' + line + "</p>");
-            afterBridge = false;
+            afterSecondBridge = false;
           }
         }
         return '<div class="body">' + out.join("") + "</div>";
