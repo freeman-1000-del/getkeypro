@@ -70,33 +70,33 @@
     header.brand .nav-inner {
       width: min(var(--max), 100%);
       margin: 0 auto;
-      padding: 16px var(--pad);
+      padding: 20px var(--pad) 18px;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
     }
     header.brand .logo {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 14px;
-      flex-shrink: 1;
-      min-width: 0;
+      justify-content: center;
+      gap: 12px;
       text-decoration: none;
       color: inherit;
     }
     header.brand .logo img {
-      height: 100px;
-      width: auto;
-      max-width: min(240px, 44vw);
+      height: auto;
+      width: min(420px, 88vw);
+      max-height: 160px;
       display: block;
       object-fit: contain;
       background: #fff;
       border-radius: 16px;
-      padding: 8px 10px;
+      padding: 10px 14px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
-      flex-shrink: 0;
     }
     header.brand .brand-name {
       margin: 0;
@@ -110,13 +110,12 @@
     header.brand p {
       margin: 0;
       color: var(--sub);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 500;
       letter-spacing: 0.02em;
-      line-height: 1.45;
-      text-align: right;
-      flex-shrink: 1;
-      max-width: 34%;
+      line-height: 1.5;
+      text-align: center;
+      max-width: none;
     }
 
     .wrap {
@@ -241,18 +240,16 @@
 
     @media (min-width: 768px) {
       header.brand .nav-inner {
-        padding: 18px 28px;
+        padding: 24px 28px 22px;
+        gap: 14px;
       }
       header.brand .logo {
-        gap: 18px;
-      }
-      header.brand .logo {
-        gap: 18px;
+        gap: 14px;
       }
       header.brand .logo img {
-        height: 140px;
-        max-width: 360px;
-        padding: 10px 12px;
+        width: min(560px, 70vw);
+        max-height: 200px;
+        padding: 12px 18px;
         border-radius: 18px;
       }
       header.brand .brand-name {
@@ -260,7 +257,6 @@
       }
       header.brand p {
         font-size: 14px;
-        max-width: none;
       }
       .wrap { padding: 8px 28px 120px; }
       .card { margin-bottom: 36px; }
@@ -277,7 +273,7 @@
   <header class="brand">
     <div class="nav-inner">
       <a class="logo" href="./news.html" aria-label="머니키 리포트 홈">
-        <img src="./moneykey-logo.png" alt="" width="1024" height="1024" />
+        <img src="./moneykey-logo.png" alt="" width="1360" height="768" />
         <h1 class="brand-name">머니키 리포트</h1>
       </a>
       <p>프리미엄 금융 · 거시경제 칼럼</p>
