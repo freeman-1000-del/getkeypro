@@ -292,23 +292,8 @@
       }
 
       function adBox(label) {
-        return (
-          '<aside class="ad-slot" aria-label="Advertisement">' +
-          '<div class="ad-label">' + esc(label || "Advertisement") + "</div>" +
-          "<!-- Google AdSense (승인 후 주석 해제)\n" +
-          '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' +
-          esc(cfg.ADSENSE_CLIENT || "") +
-          '" crossorigin="anonymous"><\\/script>\n' +
-          '<ins class="adsbygoogle" style="display:block" data-ad-client="' +
-          esc(cfg.ADSENSE_CLIENT || "") +
-          '" data-ad-slot="' +
-          esc(cfg.ADSENSE_SLOT || "") +
-          '" data-ad-format="fluid"><\\/ins>\n' +
-          "<script>(adsbygoogle = window.adsbygoogle || []).push({});<\\/script>\n" +
-          "-->" +
-          '<div style="color:#6b7582;font-size:12px;padding:14px 0">AdSense slot</div>' +
-          "</aside>"
-        );
+        // AdSense 승인 전: 플레이스홀더 노출 없음
+        return "";
       }
 
       function bodyWithMidAd(raw) {
@@ -395,7 +380,10 @@
             .order("created_at", { ascending: false })
             .limit(40);
           if (res.error) throw res.error;
-          var rows = res.data || [];
+          var rows = (res.data || []).filter(function (row) {
+            var t = String(row.title || "");
+            return t.indexOf("__probe__") < 0;
+          });
           if (!rows.length) {
             feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
             return;
