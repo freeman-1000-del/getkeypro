@@ -378,6 +378,30 @@
         );
       }
 
+      function isHookEcho(line, hook) {
+        if (!line || !hook) return false;
+        // 알려진 동어 반복
+        if (
+          line === "요즘 주식 시장이 뒤숭숭하죠?" ||
+          line === "코스피가 하룻새 6.3%나 급락하면서 7000선을 밑돌았습니다."
+        ) {
+          return true;
+        }
+        var nums = hook.match(/\d+(?:\.\d+)?%?/g) || [];
+        if (!nums.length) return false;
+        var numHit = 0;
+        for (var n = 0; n < nums.length; n++) {
+          if (line.indexOf(nums[n]) >= 0) numHit++;
+        }
+        if (!numHit) return false;
+        var keys = ["코스피", "급락", "하룻새", "레버리지", "연금", "고령", "대출", "7000"];
+        var shared = 0;
+        for (var k = 0; k < keys.length; k++) {
+          if (hook.indexOf(keys[k]) >= 0 && line.indexOf(keys[k]) >= 0) shared++;
+        }
+        return shared >= 2;
+      }
+
       function decorateBody(raw) {
         var html = String(raw || "");
         if (html.indexOf("<br") < 0) {
@@ -386,6 +410,7 @@
         var parts = html.split(/<br\s*\/?>/i);
         var out = [];
         var afterFiller = false;
+        var lastHook = "";
         for (var i = 0; i < parts.length; i++) {
           var line = String(parts[i] || "")
             .replace(/&nbsp;/gi, " ")
@@ -394,6 +419,7 @@
           // 발행 마커 «H»후킹
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
             var hook = line.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "");
+            lastHook = hook;
             out.push('<p class="seg-hook">' + hook + "</p>");
             afterFiller = false;
             continue;
@@ -402,13 +428,14 @@
             afterFiller = true; // 사족 삭제, 다음 줄을 후킹으로
             continue;
           }
-          // 후킹과 겹치는 반복 문장 제거
-          if (line === "요즘 주식 시장이 뒤숭숭하죠?") {
+          // 직전 후킹과 같은 사실 되풀이 제거
+          if (isHookEcho(line, lastHook)) {
             continue;
           }
           if (afterFiller) {
             out.push('<p class="seg-hook">' + line + "</p>");
             afterFiller = false;
+            lastHook = line;
             continue;
           }
           out.push('<p class="seg">' + line + "</p>");
