@@ -493,28 +493,41 @@
               .trim();
           }
 
+          function asGoldSubtitle(raw) {
+            var t = String(raw || "")
+              .replace(/&nbsp;/gi, " ")
+              .trim();
+            // [제목] · 【제목】 · 섞인 괄호 [제목】 / 【제목]
+            var m = t.match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
+            if (!m) return null;
+            return "[" + String(m[1]).replace(/\s+/g, " ").trim() + "]";
+          }
+
           function pushPlain(text) {
             var t = stripMarks(text);
             if (!t) return;
-            var bracketSub = t.match(/^\[([^\]]{1,40})\]$/);
-            var cornerSub = t.match(/^【([^】]{1,40})】$/);
-            if (bracketSub || cornerSub) {
-              var subTxt = bracketSub
-                ? "[" + bracketSub[1] + "]"
-                : "[" + cornerSub[1] + "]";
+            var subTxt = asGoldSubtitle(t);
+            if (subTxt) {
               out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
               return;
             }
             out.push('<p class="seg">' + t + "</p>");
           }
 
-          // 구조 헤더·관리 라벨 — 표시 안 함 (자동 스타일 없음)
+          // GPT 구조 헤더 【증시 총평】 → 골드 소타이틀로 표시
+          if (/^【\s*증시\s*총평\s*】$/.test(line) || /^\[\s*증시\s*총평\s*[\]】]$/.test(line)
+              || /^【\s*증시\s*총평\s*\]$/.test(line)) {
+            out.push('<p class="seg-label">' + esc("[증시 총평]") + "</p>");
+            continue;
+          }
+
+          // 그 외 구조 헤더·관리 라벨 — 표시 안 함
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
               || line.indexOf("【당일 시황") === 0
               || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
               || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0
               || line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0
-              || line.indexOf("【기타") === 0 || line.indexOf("【증시 총평】") === 0
+              || line.indexOf("【기타") === 0
               || line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0
               || line.indexOf("【코멘트】") === 0) {
             continue;
