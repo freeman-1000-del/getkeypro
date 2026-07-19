@@ -188,17 +188,34 @@
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 2;
+      line-height: 1.55;
       color: #d8dee6;
       word-break: keep-all;
       overflow-wrap: break-word;
-      padding: 0 var(--pad);
-      margin: 0 0 8px;
+      padding: 0 var(--pad) 28px;
+      margin: 0;
       letter-spacing: -0.01em;
     }
-    .body:last-child,
-    .body-half:last-of-type {
-      padding-bottom: 28px;
+    .body .seg {
+      margin: 0 0 0.4em;
+      line-height: 1.55;
+    }
+    .body .seg:last-child {
+      margin-bottom: 0;
+    }
+    /* 다음 기사(브릿지) — 전기사와 간격 + 골드 강조 */
+    .body .seg-bridge {
+      margin: 2.1em 0 1.4em;
+      padding: 0.15em 0;
+      color: #d4af37;
+      font-weight: 700;
+      font-size: 1.06em;
+      line-height: 1.4;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+    .body .seg-bridge:first-child {
+      margin-top: 0.6em;
     }
 
     .ad-slot {
@@ -296,46 +313,40 @@
         return "";
       }
 
-      function bodyWithMidAd(raw) {
-        // DB: 이스케이프 + <br> 저장본
+      function isBridgeLine(text) {
+        var t = String(text || "").trim();
+        return (
+          t === "그 다음 소식 보실까요?" ||
+          t === "두 번째 소식 보시죠." ||
+          t === "첫 번째 소식 보시죠." ||
+          t === "첫 번째 소식입니다."
+        );
+      }
+
+      function decorateBody(raw) {
         var html = String(raw || "");
         if (html.indexOf("<br") < 0) {
           html = esc(html).replace(/\n/g, "<br>");
         }
         var parts = html.split(/<br\s*\/?>/i);
-        if (parts.length < 4) {
-          return '<div class="body">' + html + "</div>";
-        }
-        var mid = Math.floor(parts.length / 2);
-        var top = parts.slice(0, mid).join("<br>");
-        var bottom = parts.slice(mid).join("<br>");
-        // 맺음말(오늘 준비한…) 직전에도 광고 — 하단부를 다시 쪼갬
-        var closeIdx = -1;
+        var out = [];
         for (var i = 0; i < parts.length; i++) {
-          if (parts[i].indexOf("오늘 준비한 시황") >= 0
-              || parts[i].indexOf("오늘 준비한 소식") >= 0
-              || parts[i].indexOf("오늘 준비한 경제") >= 0) {
-            closeIdx = i;
-            break;
+          var line = String(parts[i] || "")
+            .replace(/&nbsp;/gi, " ")
+            .trim();
+          if (!line) continue;
+          if (isBridgeLine(line)) {
+            out.push('<p class="seg-bridge">' + line + "</p>");
+          } else {
+            out.push('<p class="seg">' + line + "</p>");
           }
         }
-        if (closeIdx > mid) {
-          var midPart = parts.slice(mid, closeIdx).join("<br>");
-          var closePart = parts.slice(closeIdx).join("<br>");
-          return (
-            '<div class="body body-half">' + top + "</div>" +
-            adBox("본문 중간") +
-            '<div class="body body-half">' + midPart + "</div>" +
-            adBox("맺음말 직전") +
-            '<div class="body body-half">' + closePart + "</div>"
-          );
-        }
-        return (
-          '<div class="body body-half">' + top + "</div>" +
-          adBox("본문 중간") +
-          '<div class="body body-half">' + bottom + "</div>" +
-          adBox("맺음말 직전")
-        );
+        return '<div class="body">' + out.join("") + "</div>";
+      }
+
+      function bodyWithMidAd(raw) {
+        // AdSense 슬롯은 현재 비활성 — 본문만 서식 적용
+        return decorateBody(raw);
       }
 
       function fmtDate(iso) {
