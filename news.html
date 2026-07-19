@@ -52,7 +52,7 @@
         var(--bg);
       color: var(--txt);
       font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      line-height: 2;
+      line-height: 1.75;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -204,8 +204,9 @@
       letter-spacing: -0.02em;
       color: #d4af37;
       text-align: left;
-      word-break: keep-all;
+      word-break: normal;
       overflow-wrap: break-word;
+      line-break: loose;
     }
 
     /* 썸네일: 카드 중앙, 적당한 크기 */
@@ -224,85 +225,55 @@
       display: none;
     }
 
-    /* 본문 칼럼 — 좌측 정렬 · 행간 여유 */
+    /* 본문: 스타일 최소 — 복붙 문장 그대로. [소타이틀]만 골드 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 2.35;
+      line-height: 1.75;
       color: #d8dee6;
-      word-break: keep-all;
+      word-break: normal;
       overflow-wrap: break-word;
+      line-break: loose;
       padding: 0 var(--pad) 28px;
       margin: 0;
       letter-spacing: -0.01em;
       text-align: left;
     }
-    .body .seg {
-      margin: 0 0 1.75em;
-      line-height: 2.35;
+    .body .seg,
+    .body .seg-fact,
+    .body .seg-opinion,
+    .body .seg-ny,
+    .body .seg-review,
+    .body .seg-hook,
+    .body .seg-proverb,
+    .body .seg-red,
+    .body .seg-orange,
+    .body .seg-closing,
+    .body .seg-bridge,
+    .body .seg-topic {
+      margin: 0 0 0.85em;
+      padding: 0;
+      line-height: 1.75;
+      font-size: 1em;
+      font-weight: 400;
+      color: #d8dee6;
       text-align: left;
+      text-shadow: none;
+      border: 0;
+      background: transparent;
     }
     .body .seg:last-child {
       margin-bottom: 0;
     }
-    /* 기사 시작 후킹(골드). 사족 큐는 표시하지 않음 */
-    .body .seg-hook {
-      margin: 2.4em 0 1.2em;
-      padding: 0.15em 0;
-      color: #d4af37;
-      font-weight: 700;
-      font-size: 1.08em;
-      line-height: 1.5;
-      text-align: center;
-      letter-spacing: -0.02em;
-    }
-    .body .seg-hook:first-child {
-      margin-top: 0.6em;
-    }
-    /* 증시 격언 — 하늘색 강조 */
-    .body .seg-proverb {
-      margin: 0.45em 0;
-      color: #7ec8ff;
-      font-weight: 700;
-      font-size: 1.06em;
-      line-height: 1.55;
-      text-align: center;
-      letter-spacing: -0.02em;
-      text-shadow: 0 0 18px rgba(126, 200, 255, 0.35);
-    }
-    /* 빨강 · 주황 강조 */
-    /* 사실 · 내 생각 */
-    /* 섹션 제목: [증시총평] [증시 단상] [끝마치며] — 골드 + 위아래 행간 한 칸 더 */
+    /* [소타이틀] 한 줄만 골드 */
     .body .seg-label {
-      margin: 2.8em 0 1.6em;
-      font-size: 1.06em;
+      margin: 1.25em 0 0.65em;
+      font-size: 1.05em;
       font-weight: 800;
-      letter-spacing: 0.04em;
+      letter-spacing: -0.01em;
       color: #d4af37;
       text-align: left;
-      line-height: 1.7;
-    }
-    .body .seg-label.opinion,
-    .body .seg-label.ny,
-    .body .seg-label.review,
-    .body .seg-label.closing {
-      color: #d4af37;
-      margin-top: 2.8em;
-      margin-bottom: 1.6em;
-    }
-    .body .seg-ny {
-      margin: 0 0 1.75em;
-      line-height: 2.35;
-      color: #c8d4e4;
-      text-align: left;
-    }
-    .body .seg-review {
-      margin: 0 0 1.75em;
-      line-height: 2.35;
-      color: #e8e0c8;
-      padding-left: 0.75em;
-      border-left: 3px solid rgba(212, 175, 55, 0.5);
-      text-align: left;
+      line-height: 1.5;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -338,77 +309,6 @@
     .mk-chart-wrap canvas {
       width: 100% !important;
       max-height: 280px;
-    }
-    .body .seg-fact {
-      margin: 0 0 1.75em;
-      line-height: 2.35;
-      color: #d8dee6;
-      text-align: left;
-    }
-    .body .seg-opinion {
-      margin: 0 0 1.75em;
-      line-height: 2.35;
-      color: #e8eef8;
-      padding-left: 0.75em;
-      border-left: 3px solid rgba(212, 175, 55, 0.45);
-      text-align: left;
-    }
-    .body .seg-opinion.empty {
-      min-height: 8.5em;
-      margin: 0.4em 0 1.4em;
-      padding: 1.1em 1.15em;
-      border: 1px dashed rgba(158, 197, 255, 0.5);
-      border-left: 1px dashed rgba(158, 197, 255, 0.5);
-      border-radius: 12px;
-      background: rgba(126, 200, 255, 0.07);
-      color: #8fa0b5;
-      font-size: 0.95em;
-    }
-    .body .seg-label.opinion {
-      margin-top: 2.8em;
-      margin-bottom: 1.6em;
-    }
-    .body .seg-red {
-      margin: 0 0 1.75em;
-      color: #ff6b6b;
-      font-weight: 700;
-      line-height: 2.35;
-    }
-    .body .seg-orange {
-      margin: 0 0 1.75em;
-      color: #ffb020;
-      font-weight: 700;
-      line-height: 2.35;
-    }
-    /* 본문 ↔ 격언 행간 */
-    .body .seg + .seg-proverb,
-    .body .seg-hook + .seg-proverb {
-      margin-top: 3.2em;
-    }
-    /* 격언 ↔ 클로징 행간 */
-    .body .seg-proverb + .seg,
-    .body .seg-proverb + .seg-closing {
-      margin-top: 3.2em;
-    }
-    /* 본문 끝 ↔ 클로징 첫 줄만 이격 (클로징 문장끼리는 일반 행간) */
-    .body .seg-closing {
-      margin: 0 0 1em;
-      line-height: 2;
-    }
-    .body .seg:not(.seg-closing) + .seg-closing,
-    .body .seg-hook + .seg-closing {
-      margin-top: 3.2em;
-    }
-    .body .seg-bridge,
-    .body .seg-topic {
-      margin: 2.4em 0 1.2em;
-      padding: 0.15em 0;
-      color: #d4af37;
-      font-weight: 700;
-      font-size: 1.08em;
-      line-height: 1.5;
-      text-align: center;
-      letter-spacing: -0.02em;
     }
 
     .ad-slot {
@@ -580,65 +480,51 @@
             .trim();
           if (!line) continue;
 
-          function paintColored(text, colorClass) {
-            if (colorClass === "seg-hook") {
-              out.push('<p class="seg-hook">' + text + "</p>");
-            } else if (colorClass === "seg-proverb") {
-              out.push('<p class="seg-proverb">' + text + "</p>");
-            } else if (colorClass === "seg-red") {
-              out.push('<p class="seg-red">' + text + "</p>");
-            } else if (colorClass === "seg-orange") {
-              out.push('<p class="seg-orange">' + text + "</p>");
-            } else {
-              out.push('<p class="seg">' + text + "</p>");
-            }
+          function stripMarks(s) {
+            return String(s || "")
+              .replace(/^«F»|^&laquo;F&raquo;/, "")
+              .replace(/^«M»|^&laquo;M&raquo;/, "")
+              .replace(/^«H»|^&laquo;H&raquo;/, "")
+              .replace(/^«P»|^&laquo;P&raquo;/, "")
+              .replace(/^«R»|^&laquo;R&raquo;/, "")
+              .replace(/^«O»|^&laquo;O&raquo;/, "")
+              .replace(/^«NY»/, "")
+              .replace(/^«REVIEW»/, "")
+              .trim();
           }
 
-          function takeColorPrefix(s) {
-            if (s.indexOf("«H»") === 0 || s.indexOf("&laquo;H&raquo;") === 0) {
-              return { cls: "seg-hook", text: s.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "") };
+          function pushPlain(text) {
+            var t = stripMarks(text);
+            if (!t) return;
+            var bracketSub = t.match(/^\[([^\]]{1,40})\]$/);
+            var cornerSub = t.match(/^【([^】]{1,40})】$/);
+            if (bracketSub || cornerSub) {
+              var subTxt = bracketSub
+                ? "[" + bracketSub[1] + "]"
+                : "[" + cornerSub[1] + "]";
+              // 디폴트 「시황」류는 숨김
+              if (
+                subTxt === "[시황]" ||
+                subTxt === "[당일 시황]" ||
+                subTxt === "[전일 시황]"
+              ) {
+                return;
+              }
+              out.push('<p class="seg-label">' + esc(subTxt) + "</p>");
+              return;
             }
-            if (s.indexOf("«P»") === 0 || s.indexOf("&laquo;P&raquo;") === 0) {
-              return { cls: "seg-proverb", text: s.replace(/^«P»/, "").replace(/^&laquo;P&raquo;/, "") };
-            }
-            if (s.indexOf("«R»") === 0 || s.indexOf("&laquo;R&raquo;") === 0) {
-              return { cls: "seg-red", text: s.replace(/^«R»/, "").replace(/^&laquo;R&raquo;/, "") };
-            }
-            if (s.indexOf("«O»") === 0 || s.indexOf("&laquo;O&raquo;") === 0) {
-              return { cls: "seg-orange", text: s.replace(/^«O»/, "").replace(/^&laquo;O&raquo;/, "") };
-            }
-            return null;
+            out.push('<p class="seg">' + t + "</p>");
           }
 
+          // 구조 헤더·관리 라벨 — 표시 안 함 (자동 스타일 없음)
           if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
               || line.indexOf("【당일 시황") === 0
               || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
-              || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0) {
-            // 「시황」 디폴트 라벨은 독자에게 표시하지 않음
-            shownFactLabel = true;
-            continue;
-          }
-          if (line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0) {
-            if (!shownNyLabel) {
-              out.push('<p class="seg-label ny">뉴욕증시 분석</p>');
-              shownNyLabel = true;
-            }
-            continue;
-          }
-          if (line.indexOf("【기타") === 0) {
-            out.push('<p class="seg-label">기타 사항</p>');
-            continue;
-          }
-          if (line.indexOf("【증시 총평】") === 0) {
-            if (!shownReviewLabel) {
-              out.push('<p class="seg-label review">[증시총평]</p>');
-              shownReviewLabel = true;
-            }
-            continue;
-          }
-          if (line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0
+              || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0
+              || line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0
+              || line.indexOf("【기타") === 0 || line.indexOf("【증시 총평】") === 0
+              || line.indexOf("【관리자 의견】") === 0 || line.indexOf("【내 생각】") === 0
               || line.indexOf("【코멘트】") === 0) {
-            // 독자에게 라벨 노출하지 않음
             continue;
           }
 
@@ -663,10 +549,9 @@
             } catch (e) {
               out.push('<p class="seg">표 데이터를 표시할 수 없습니다.</p>');
             }
-            afterFiller = false;
             continue;
           }
-          // 차트 (Chart.js)
+          // 차트
           if (line.indexOf("«CHART»") === 0) {
             try {
               var cd = JSON.parse(line.replace(/^«CHART»/, ""));
@@ -680,135 +565,39 @@
             } catch (e) {
               out.push('<p class="seg">차트 데이터를 표시할 수 없습니다.</p>');
             }
-            afterFiller = false;
-            continue;
-          }
-          // 뉴욕 브리핑
-          if (line.indexOf("«NY»") === 0) {
-            var nyt = line.replace(/^«NY»/, "");
-            if (!shownNyLabel) {
-              out.push('<p class="seg-label ny">전일 뉴욕증시 브리핑</p>');
-              shownNyLabel = true;
-            }
-            out.push('<p class="seg-ny">' + nyt + "</p>");
-            afterFiller = false;
-            continue;
-          }
-          // 증시 총평
-          if (line.indexOf("«REVIEW»") === 0) {
-            var rv = line.replace(/^«REVIEW»/, "");
-            if (!shownReviewLabel) {
-              out.push('<p class="seg-label review">[증시총평]</p>');
-              shownReviewLabel = true;
-            }
-            out.push('<p class="seg-review">' + rv + "</p>");
-            afterFiller = false;
             continue;
           }
 
-          // «F» 사실 (±강조색) — 「시황」 디폴트 라벨 없음
-          if (line.indexOf("«F»") === 0 || line.indexOf("&laquo;F&raquo;") === 0) {
-            var ft = line.replace(/^«F»/, "").replace(/^&laquo;F&raquo;/, "");
-            shownFactLabel = true;
-            shownOpinionLabel = false;
-            var fc = takeColorPrefix(ft);
-            if (fc) paintColored(fc.text, fc.cls);
-            else out.push('<p class="seg-fact">' + ft + "</p>");
-            afterFiller = false;
+          // 구형 장황 오프닝·사족 숨김
+          if (
+            line.indexOf("[MoneyKey Report] 오늘의 핵심") === 0 ||
+            line === "오늘의 핵심 금융 자산 리포트입니다." ||
+            line === "오늘의 핵심 글로벌 거시경제 리포트입니다." ||
+            isFillerCue(line)
+          ) {
             continue;
           }
-          // «M» 코멘트 → [증시 단상]
-          if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
-            var mt = line.replace(/^«M»/, "").replace(/^&laquo;M&raquo;/, "");
-            var isEmptyOp = !mt || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt)
-              || mt.indexOf("（여기") === 0;
-            if (isEmptyOp) continue;
-            if (!shownOpinionLabel) {
-              out.push('<p class="seg-label opinion">[증시 단상]</p>');
-              shownOpinionLabel = true;
-            }
-            var mc = takeColorPrefix(mt);
-            if (mc) paintColored(mc.text, mc.cls);
-            else out.push('<p class="seg-opinion">' + mt + "</p>");
-            afterFiller = false;
-            shownFactLabel = false;
-            continue;
-          }
-          // 발행 마커 «H»후킹 — 카드 제목과 같으면 생략
+
+          // «H»가 카드 제목과 같으면 생략
           if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
-            var hook = line.replace(/^«H»/, "").replace(/^&laquo;H&raquo;/, "");
+            var hook = stripMarks(line);
             var hookNorm = String(hook || "").replace(/[.\s]+$/g, "").trim();
             if (titleNorm && hookNorm && (hookNorm === titleNorm || titleNorm.indexOf(hookNorm) === 0)) {
               continue;
             }
-            lastHook = hook;
-            out.push('<p class="seg-hook">' + hook + "</p>");
-            afterFiller = false;
-            inClosing = false;
-            shownFactLabel = false;
-            shownOpinionLabel = false;
-            shownNyLabel = false;
-            shownReviewLabel = false;
-            continue;
           }
-          // 증시 격언 «P»
-          if (line.indexOf("«P»") === 0 || line.indexOf("&laquo;P&raquo;") === 0) {
-            var proverb = line.replace(/^«P»/, "").replace(/^&laquo;P&raquo;/, "");
-            out.push('<p class="seg-proverb">' + proverb + "</p>");
-            afterFiller = false;
-            continue;
+
+          // 빈 코멘트 플레이스홀더 숨김
+          if (line.indexOf("«M»") === 0 || line.indexOf("&laquo;M&raquo;") === 0) {
+            var mt0 = stripMarks(line);
+            if (!mt0 || /관리자 의견을 적어|내 생각을 적어|여기에 코멘트/.test(mt0)
+                || mt0.indexOf("（여기") === 0) {
+              continue;
+            }
           }
-          // «R» 빨강 · «O» 주황
-          if (line.indexOf("«R»") === 0 || line.indexOf("&laquo;R&raquo;") === 0) {
-            var red = line.replace(/^«R»/, "").replace(/^&laquo;R&raquo;/, "");
-            out.push('<p class="seg-red">' + red + "</p>");
-            afterFiller = false;
-            continue;
-          }
-          if (line.indexOf("«O»") === 0 || line.indexOf("&laquo;O&raquo;") === 0) {
-            var ora = line.replace(/^«O»/, "").replace(/^&laquo;O&raquo;/, "");
-            out.push('<p class="seg-orange">' + ora + "</p>");
-            afterFiller = false;
-            continue;
-          }
-          if (
-            line === "오늘의 증시 격언입니다." ||
-            line === "소문에 사고 뉴스에 팔아라." ||
-            line.indexOf("소문에 사고 뉴스에 팔아라") === 0
-          ) {
-            out.push('<p class="seg-proverb">' + line + "</p>");
-            afterFiller = false;
-            continue;
-          }
-          // 구형 장황 오프닝 숨김
-          if (
-            line.indexOf("[MoneyKey Report] 오늘의 핵심") === 0 ||
-            line === "오늘의 핵심 금융 자산 리포트입니다." ||
-            line === "오늘의 핵심 글로벌 거시경제 리포트입니다."
-          ) {
-            continue;
-          }
-          if (isFillerCue(line)) {
-            afterFiller = true; // 사족 삭제, 다음 줄을 후킹으로
-            continue;
-          }
-          // 직전 후킹과 같은 사실 되풀이 제거
-          if (isHookEcho(line, lastHook)) {
-            continue;
-          }
-          if (afterFiller) {
-            out.push('<p class="seg-hook">' + line + "</p>");
-            afterFiller = false;
-            lastHook = line;
-            continue;
-          }
-          if (isClosingCue(line) && !inClosing) {
-            inClosing = true;
-            out.push('<p class="seg-label closing">[끝마치며]</p>');
-            out.push('<p class="seg seg-closing">' + line + "</p>");
-            continue;
-          }
-          out.push('<p class="seg">' + line + "</p>");
+
+          // 그 외: 마커 벗기고 일반 문단. [소타이틀]만 골드
+          pushPlain(line);
         }
         setTimeout(function () {
           (chartQueue || []).forEach(function (item) {
