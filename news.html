@@ -152,14 +152,55 @@
       padding: 18px var(--pad) 0;
     }
     .tag {
-      padding: 6px 14px;
+      padding: 8px 18px;
       border-radius: 999px;
       background: var(--accent-dim);
       color: var(--accent);
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
       line-height: 1.3;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(61, 214, 140, 0.25);
+      animation: tag-glow 2.4s ease-in-out infinite;
+    }
+    .tag::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(
+        100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.55) 45%,
+        transparent 75%
+      );
+      transform: skewX(-20deg);
+      animation: tag-shine 2.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes tag-glow {
+      0%, 100% {
+        box-shadow:
+          0 0 0 1px rgba(61, 214, 140, 0.28),
+          0 0 10px rgba(61, 214, 140, 0.18);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow:
+          0 0 0 1px rgba(61, 214, 140, 0.55),
+          0 0 18px rgba(61, 214, 140, 0.45);
+        filter: brightness(1.15);
+      }
+    }
+    @keyframes tag-shine {
+      0% { left: -120%; opacity: 0; }
+      15% { opacity: 1; }
+      45% { left: 140%; opacity: 0.9; }
+      100% { left: 140%; opacity: 0; }
     }
     .card h2 {
       margin: 0;
@@ -279,6 +320,7 @@
       header.brand p {
         font-size: 21px;
       }
+      .tag { font-size: 24px; padding: 9px 20px; }
       .wrap { padding: 8px 28px 120px; }
       .card { margin-bottom: 36px; }
       .card .meta,
