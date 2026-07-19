@@ -249,12 +249,12 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 1.1em;
+      margin: 0 0 0.7em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.9;
+      line-height: 1.75;
       text-align: left;
       white-space: normal;
       word-break: keep-all;
@@ -267,19 +267,19 @@
       display: block;
       margin: 0;
       padding: 0;
-      height: 1.35em;
-      min-height: 1.35em;
-      line-height: 1.35em;
+      height: 0.55em;
+      min-height: 0.55em;
+      line-height: 0.55em;
       border: 0;
       overflow: hidden;
       visibility: hidden;
     }
     .body .seg-proverb {
-      margin: 0.85em 0;
+      margin: 0.5em 0;
       color: #7ec8ff !important;
       font-weight: 700;
       font-size: 1.05em;
-      line-height: 1.9;
+      line-height: 1.75;
       text-align: left;
       white-space: normal;
       word-break: keep-all;
@@ -294,7 +294,7 @@
       .body .seg,
       .body .seg-proverb {
         font-size: 17px;
-        line-height: 1.95;
+        line-height: 1.8;
         word-break: keep-all;
         overflow-wrap: normal;
         word-wrap: normal;
@@ -302,11 +302,11 @@
         hyphens: none;
       }
       .body .seg {
-        margin-bottom: 1.2em;
+        margin-bottom: 0.75em;
       }
       .body .seg-gap {
-        height: 1.5em;
-        min-height: 1.5em;
+        height: 0.6em;
+        min-height: 0.6em;
       }
     }
     .mk-table-wrap {
@@ -572,7 +572,8 @@
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
           if (!hl) {
-            // 편집자가 넣은 빈 줄 = 의도한 행간 (문장 완성 여부와 무관)
+            // 미완성 문장 중간의 빈 줄은 무시하고 이어 붙임
+            if (bufLine && !endsSentence(bufLine) && !asSub(bufLine)) continue;
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
             continue;
@@ -600,7 +601,32 @@
         }
         pushBuf();
 
-        // 2) 토큰화 (빈 줄 = 행간 gap)
+        // 1b) 빈 줄만 문단 경계 — 연속 본문은 한 덩어리로 이어 붙임(조기 줄끊김·과한 행간 방지)
+        var flowed = [];
+        var flowBuf = [];
+        function pushFlow() {
+          if (!flowBuf.length) return;
+          flowed.push(flowBuf.join(" "));
+          flowBuf = [];
+        }
+        for (var fi = 0; fi < healed.length; fi++) {
+          var fl = String(healed[fi] || "").trim();
+          if (!fl) {
+            pushFlow();
+            if (flowed.length && flowed[flowed.length - 1] !== "") flowed.push("");
+            continue;
+          }
+          if (asSub(fl) || isProverb(fl)) {
+            pushFlow();
+            flowed.push(fl);
+            continue;
+          }
+          flowBuf.push(fl);
+        }
+        pushFlow();
+        healed = flowed;
+
+        // 2) 토큰화 (빈 줄 = 원문이 넣은 문단 간격만)
         var tokens = [];
         var proverbs = [];
         var seenPr = {};
@@ -651,30 +677,6 @@
           }
           tokens.push({ k: "text", v: t });
         }
-
-        // 2b) 연속 본문 토큰 사이에 행간 gap 자동 삽입 (빈 줄 없이도 가독성)
-        var spaced = [];
-        for (var si = 0; si < tokens.length; si++) {
-          var curTok = tokens[si];
-          if (
-            spaced.length &&
-            spaced[spaced.length - 1].k === "text" &&
-            curTok.k === "text"
-          ) {
-            spaced.push({ k: "gap" });
-          } else if (
-            spaced.length &&
-            spaced[spaced.length - 1].k === "text" &&
-            curTok.k === "label"
-          ) {
-            spaced.push({ k: "gap" });
-          }
-          if (curTok.k === "gap") {
-            if (!spaced.length || spaced[spaced.length - 1].k === "gap") continue;
-          }
-          spaced.push(curTok);
-        }
-        tokens = spaced;
 
         // 3) 격언 → [증시 단상] 본문 뒤(다음 소타이틀 직전). 맨 앞에 단상 라벨을 만들지 않음
         if (proverbs.length) {
