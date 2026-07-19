@@ -225,7 +225,7 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 한글 단어 중간 끊김 방지 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일에서도 줄 폭을 채우도록 */
     .body,
     .body-half {
       font-size: 18px;
@@ -235,8 +235,8 @@
       margin: 0;
       text-align: left;
       word-break: keep-all;
-      overflow-wrap: normal;
-      line-break: strict;
+      overflow-wrap: break-word;
+      line-break: auto;
     }
     .body .seg-label {
       margin: 1.35em 0 0.65em;
@@ -256,7 +256,8 @@
       text-align: left;
       white-space: normal;
       word-break: keep-all;
-      overflow-wrap: normal;
+      overflow-wrap: break-word;
+      line-break: auto;
     }
     .body .seg-proverb {
       margin: 0.55em 0;
@@ -267,7 +268,8 @@
       text-align: left;
       white-space: normal;
       word-break: keep-all;
-      overflow-wrap: normal;
+      overflow-wrap: break-word;
+      line-break: auto;
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -463,16 +465,32 @@
 
         function stripMarks(s) {
           return String(s || "")
-            .replace(/^«F»|^&laquo;F&raquo;/g, "")
-            .replace(/^«M»|^&laquo;M&raquo;/g, "")
-            .replace(/^«H»|^&laquo;H&raquo;/g, "")
-            .replace(/^«P»|^&laquo;P&raquo;/g, "")
-            .replace(/^«R»|^&laquo;R&raquo;/g, "")
-            .replace(/^«O»|^&laquo;O&raquo;/g, "")
-            .replace(/«F»|&laquo;F&raquo;/g, "")
-            .replace(/^«NY»/, "")
-            .replace(/^«REVIEW»/, "")
+            .replace(/«[A-Z]+»|&laquo;[A-Z]+&raquo;/gi, " ")
+            .replace(/[ \t]+/g, " ")
             .trim();
+        }
+
+        function particleEnd(s) {
+          return /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(s);
+        }
+        function suffixStart(s) {
+          return /^(니다|습니다|습니까|세요|시죠|죠|지요|까요|군요|네요)/.test(s);
+        }
+        function joinSoft(a, b) {
+          if (!a) return b;
+          if (!b) return a;
+          if (/[A-Za-z0-9]/.test(a.charAt(a.length - 1)) && /[A-Za-z0-9]/.test(b.charAt(0))) {
+            return a + " " + b;
+          }
+          if (suffixStart(b)) return a + b;
+          if (particleEnd(a)) return a + " " + b;
+          return a + b;
+        }
+        function fixSpaces(s) {
+          return String(s || "").replace(
+            /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|을|를|은|는|의|에|와|과|도|만|이|가|로)(?=[가-힣]{2,})/g,
+            "$1 "
+          ).replace(/ {2,}/g, " ");
         }
 
         function asSub(t) {
@@ -499,10 +517,11 @@
         var healed = [];
         var bufLine = "";
         function pushBuf() {
-          if (bufLine) { healed.push(bufLine); bufLine = ""; }
+          if (bufLine) { healed.push(fixSpaces(bufLine)); bufLine = ""; }
         }
         for (var hi = 0; hi < parts.length; hi++) {
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
+          hl = stripMarks(hl);
           if (!hl) {
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "") healed.push("");
@@ -526,11 +545,7 @@
             pushBuf();
             bufLine = hl;
           } else {
-            var last = bufLine.charAt(bufLine.length - 1);
-            var first = hl.charAt(0);
-            bufLine = (/[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first))
-              ? (bufLine + " " + hl)
-              : (bufLine + hl);
+            bufLine = joinSoft(bufLine, hl);
           }
         }
         pushBuf();
