@@ -614,15 +614,8 @@
               || line.indexOf("【당일 시황") === 0
               || line.indexOf("【근일 시황") === 0 || line.indexOf("【직전 시황") === 0
               || line.indexOf("【한국 증시") === 0 || line.indexOf("【핵심") === 0) {
-            if (!shownFactLabel) {
-              var fl = "시황";
-              if (line.indexOf("【당일") === 0 || line.indexOf("【금일") === 0) fl = "당일 시황";
-              else if (line.indexOf("【전일") === 0) fl = "전일 시황";
-              else if (line.indexOf("【근일") === 0) fl = "시황";
-              else if (line.indexOf("【직전") === 0) fl = "전일 시황";
-              out.push('<p class="seg-label">' + fl + '</p>');
-              shownFactLabel = true;
-            }
+            // 「시황」 디폴트 라벨은 독자에게 표시하지 않음
+            shownFactLabel = true;
             continue;
           }
           if (line.indexOf("【뉴욕증시") === 0 || line.indexOf("【전일 뉴욕") === 0) {
