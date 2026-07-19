@@ -225,19 +225,20 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일 줄바꿈 완화 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일에서 어절 중간 끊김 방지 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.85;
+      line-height: 1.9;
       color: #d8dee6;
       padding: 0 var(--pad) 28px;
       margin: 0;
       text-align: left;
       word-break: keep-all;
-      overflow-wrap: break-word;
-      line-break: auto;
-      word-wrap: break-word;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
     }
     .body .seg-label {
       margin: 1.35em 0 0.65em;
@@ -248,36 +249,44 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.55em;
+      margin: 0 0 1.1em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.85;
+      line-height: 1.9;
       text-align: left;
       white-space: normal;
       word-break: keep-all;
-      overflow-wrap: break-word;
-      line-break: auto;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
     }
     .body .seg-gap {
+      display: block;
       margin: 0;
       padding: 0;
-      height: 0.85em;
-      line-height: 0;
+      height: 1.35em;
+      min-height: 1.35em;
+      line-height: 1.35em;
       border: 0;
+      overflow: hidden;
+      visibility: hidden;
     }
     .body .seg-proverb {
-      margin: 0.55em 0;
+      margin: 0.85em 0;
       color: #7ec8ff !important;
       font-weight: 700;
       font-size: 1.05em;
-      line-height: 1.85;
+      line-height: 1.9;
       text-align: left;
       white-space: normal;
       word-break: keep-all;
-      overflow-wrap: break-word;
-      line-break: auto;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
     }
     @media (max-width: 640px) {
       .body,
@@ -285,10 +294,19 @@
       .body .seg,
       .body .seg-proverb {
         font-size: 17px;
-        line-height: 1.9;
+        line-height: 1.95;
         word-break: keep-all;
-        overflow-wrap: break-word;
-        line-break: auto;
+        overflow-wrap: normal;
+        word-wrap: normal;
+        line-break: strict;
+        hyphens: none;
+      }
+      .body .seg {
+        margin-bottom: 1.2em;
+      }
+      .body .seg-gap {
+        height: 1.5em;
+        min-height: 1.5em;
       }
     }
     .mk-table-wrap {
@@ -634,6 +652,30 @@
           tokens.push({ k: "text", v: t });
         }
 
+        // 2b) 연속 본문 토큰 사이에 행간 gap 자동 삽입 (빈 줄 없이도 가독성)
+        var spaced = [];
+        for (var si = 0; si < tokens.length; si++) {
+          var curTok = tokens[si];
+          if (
+            spaced.length &&
+            spaced[spaced.length - 1].k === "text" &&
+            curTok.k === "text"
+          ) {
+            spaced.push({ k: "gap" });
+          } else if (
+            spaced.length &&
+            spaced[spaced.length - 1].k === "text" &&
+            curTok.k === "label"
+          ) {
+            spaced.push({ k: "gap" });
+          }
+          if (curTok.k === "gap") {
+            if (!spaced.length || spaced[spaced.length - 1].k === "gap") continue;
+          }
+          spaced.push(curTok);
+        }
+        tokens = spaced;
+
         // 3) 격언 → [증시 단상] 본문 뒤(다음 소타이틀 직전). 맨 앞에 단상 라벨을 만들지 않음
         if (proverbs.length) {
           var prToks = proverbs.map(function (p) { return { k: "proverb", v: p }; });
@@ -666,7 +708,7 @@
           var tok = tokens[oi];
           if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
           else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
-          else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true"></p>');
+          else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
           else out.push('<p class="seg">' + tok.v + "</p>");
         }
         return '<div class="body">' + out.join("") + "</div>";
