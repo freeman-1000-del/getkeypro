@@ -188,7 +188,7 @@
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.55;
+      line-height: 2;
       color: #d8dee6;
       word-break: keep-all;
       overflow-wrap: break-word;
@@ -197,25 +197,25 @@
       letter-spacing: -0.01em;
     }
     .body .seg {
-      margin: 0 0 0.4em;
-      line-height: 1.55;
+      margin: 0 0 1em;
+      line-height: 2;
     }
     .body .seg:last-child {
       margin-bottom: 0;
     }
-    /* 다음 기사(브릿지) — 전기사와 간격 + 골드 강조 */
+    /* 다음 기사(브릿지) — 전기사와 거리만 넓힘 + 골드 */
     .body .seg-bridge {
-      margin: 2.1em 0 1.4em;
-      padding: 0.15em 0;
+      margin: 3.4em 0 1.8em;
+      padding: 0.2em 0;
       color: #d4af37;
       font-weight: 700;
       font-size: 1.06em;
-      line-height: 1.4;
+      line-height: 1.5;
       text-align: center;
       letter-spacing: -0.02em;
     }
     .body .seg-bridge:first-child {
-      margin-top: 0.6em;
+      margin-top: 0.8em;
     }
 
     .ad-slot {
@@ -315,12 +315,17 @@
 
       function isBridgeLine(text) {
         var t = String(text || "").trim();
-        return (
+        if (
           t === "그 다음 소식 보실까요?" ||
           t === "두 번째 소식 보시죠." ||
           t === "첫 번째 소식 보시죠." ||
           t === "첫 번째 소식입니다."
-        );
+        ) {
+          return true;
+        }
+        // 주식 2번 안내: 다음은 '…' 이야기입니다.
+        if (/^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)) return true;
+        return false;
       }
 
       function decorateBody(raw) {
@@ -395,8 +400,9 @@
             var t = String(row.title || "");
             var id = String(row.id || "");
             if (t.indexOf("__probe__") >= 0) return false;
-            // 구버전(최근→하룻새 수정 전) 숨김
+            // 구버전 숨김
             if (id === "a7e0cdd0-f1e1-4c60-9485-0d53d0fcf4e7") return false;
+            if (id === "c7d0659a-e86a-4bdb-a168-9d5d66c0e3ef") return false;
             return true;
           });
           if (!rows.length) {
