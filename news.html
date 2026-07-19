@@ -225,7 +225,7 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일에서도 줄 폭을 채우도록 */
+    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일 줄바꿈 완화 */
     .body,
     .body-half {
       font-size: 18px;
@@ -237,6 +237,7 @@
       word-break: keep-all;
       overflow-wrap: break-word;
       line-break: auto;
+      word-wrap: break-word;
     }
     .body .seg-label {
       margin: 1.35em 0 0.65em;
@@ -270,6 +271,18 @@
       word-break: keep-all;
       overflow-wrap: break-word;
       line-break: auto;
+    }
+    @media (max-width: 640px) {
+      .body,
+      .body-half,
+      .body .seg,
+      .body .seg-proverb {
+        font-size: 17px;
+        line-height: 1.9;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        line-break: auto;
+      }
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
@@ -726,7 +739,7 @@
               .select("id,title,body,category,created_at")
               .eq("category", "주식")
               .order("created_at", { ascending: false })
-              .limit(6);
+              .limit(20);
             if (res.error) throw res.error;
             var rows = res.data || [];
             var picked = [];
@@ -740,15 +753,19 @@
               // 가상 '금일'만 있고 당일/전일 구조가 없으면 스킵(옛 샘플)
               if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【당일 시황") < 0
                   && b.indexOf("【전일 시황") < 0 && b.indexOf("【근일 시황") < 0
-                  && b.indexOf("【직전 시황") < 0) {
+                  && b.indexOf("【직전 시황") < 0
+                  && b.indexOf("[시황]") < 0) {
                 continue;
               }
-              if (b.indexOf("【금일 시황") < 0 && b.indexOf("【당일 시황") < 0
-                  && b.indexOf("【전일 시황") < 0
-                  && b.indexOf("【근일 시황") < 0 && b.indexOf("【직전 시황") < 0
-                  && b.indexOf("«F»") < 0 && b.indexOf("«REVIEW»") < 0) {
-                continue; // 시황 본문 없는 글 스킵
-              }
+              // 신규 4칸 형식([시황] 등) 또는 옛 마커 있으면 OK
+              var hasNew = b.indexOf("[시황]") >= 0 || b.indexOf("[증시 총평]") >= 0
+                || b.indexOf("[증시 단상]") >= 0 || b.indexOf("[끝마치며]") >= 0
+                || b.indexOf("【시황】") >= 0;
+              var hasOld = b.indexOf("【금일 시황") >= 0 || b.indexOf("【당일 시황") >= 0
+                || b.indexOf("【전일 시황") >= 0 || b.indexOf("【근일 시황") >= 0
+                || b.indexOf("【직전 시황") >= 0 || b.indexOf("«F»") >= 0
+                || b.indexOf("«REVIEW»") >= 0;
+              if (!hasNew && !hasOld) continue;
               picked.push(row);
               break; // 최신 시황 1건
             }
