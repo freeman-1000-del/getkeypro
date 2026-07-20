@@ -614,29 +614,18 @@
         }
         pushBuf();
 
-        // 1b) §§/빈 줄만 문단 경계 — 연속 본문은 한 덩어리로 이어 붙임
+        # 1b) 완결 문장은 붙이지 않음(한 문장=한 줄). §§만 큰 문단 간격.
+        // (예전 flow-merge는 문장을 한 덩어리로 붙여 가독성을 해침)
         var flowed = [];
-        var flowBuf = [];
-        function pushFlow() {
-          if (!flowBuf.length) return;
-          flowed.push(flowBuf.join(" "));
-          flowBuf = [];
-        }
         for (var fi = 0; fi < healed.length; fi++) {
           var fl = String(healed[fi] || "").trim();
           if (!fl || fl === "§§") {
-            pushFlow();
             if (flowed.length && flowed[flowed.length - 1] !== "§§") flowed.push("§§");
             continue;
           }
-          if (asSub(fl) || isProverb(fl)) {
-            pushFlow();
-            flowed.push(fl);
-            continue;
-          }
-          flowBuf.push(fl);
+          flowed.push(fl);
         }
-        pushFlow();
+        while (flowed.length && flowed[flowed.length - 1] === "§§") flowed.pop();
         healed = flowed;
 
         // 2) 토큰화 (빈 줄 = 원문이 넣은 문단 간격만)
