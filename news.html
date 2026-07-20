@@ -249,7 +249,7 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.5em;
+      margin: 0 0 1.05em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
@@ -266,11 +266,11 @@
     /* 원문 빈 줄 → 눈에 띄는 문단 간격 */
     .body .seg-gap {
       display: block;
-      margin: 0.5em 0;
+      margin: 0.85em 0;
       padding: 0;
-      height: 1.35em;
-      min-height: 1.35em;
-      line-height: 1.35em;
+      height: 1.6em;
+      min-height: 1.6em;
+      line-height: 1.6em;
       border: 0;
       overflow: hidden;
       visibility: hidden;
@@ -613,7 +613,7 @@
         }
 
         // 1) 모바일 원판 보존 — 전 구간 한 줄=한 줄. 절대 이어 붙여 긴 문장으로 만들지 않음.
-        // §§(빈 줄)만 문단 간격. 관리자가 붙여 넣은 줄바꿈을 사이트에서 합치지 않음.
+        // §§(빈 줄)만 문단 간격. 연속 §§도 유지(행간 합치지 않음).
         var healed = [];
         var inNovel = false;
         for (var hi = 0; hi < parts.length; hi++) {
@@ -642,7 +642,7 @@
           }
           var hl = stripMarks(hlRaw);
           if (!hl || hl === "§§") {
-            if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
+            healed.push("§§");
             continue;
           }
           var split = splitLeadingLabel(hl);
@@ -661,20 +661,11 @@
           healed.push(hl);
         }
 
-        // 연속 §§ 정리만 (내용 합치기 없음)
-        var flowed = [];
-        for (var fi = 0; fi < healed.length; fi++) {
-          var fl = String(healed[fi] || "").trim();
-          if (!fl || fl === "§§") {
-            if (flowed.length && flowed[flowed.length - 1] !== "§§") flowed.push("§§");
-            continue;
-          }
-          flowed.push(fl);
-        }
-        while (flowed.length && flowed[flowed.length - 1] === "§§") flowed.pop();
-        healed = flowed;
+        // 앞·뒤 연속 §§만 정리 (중간 행간은 유지)
+        while (healed.length && healed[0] === "§§") healed.shift();
+        while (healed.length && healed[healed.length - 1] === "§§") healed.pop();
 
-        // 2) 토큰화 (빈 줄 = 원문이 넣은 문단 간격만)
+        // 2) 토큰화 (빈 줄 = 원문이 넣은 문단 간격 — 연속 gap 유지)
         var tokens = [];
         var proverbs = [];
         var seenPr = {};
@@ -682,9 +673,7 @@
           var rawLine = healed[i];
           var line = String(rawLine || "").trim();
           if (!line || line === "§§") {
-            if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
-              tokens.push({ k: "gap" });
-            }
+            tokens.push({ k: "gap" });
             continue;
           }
           if (line.indexOf("CIMG:") === 0) {
