@@ -289,6 +289,28 @@
       line-break: strict;
       hyphens: none;
     }
+    /* 증권소설 실사 소형 썸네일 3장 */
+    .body .novel-thumbs {
+      display: flex;
+      gap: 8px;
+      margin: 0.35em 0 1em;
+      padding: 0;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+    .body .novel-thumbs img {
+      flex: 1 1 0;
+      width: 32%;
+      max-width: 112px;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #0f141b;
+      border: 1px solid var(--line);
+    }
+    .body .novel-thumbs img.thumb-broken {
+      display: none;
+    }
     @media (max-width: 640px) {
       .body,
       .body-half,
@@ -559,6 +581,7 @@
           var lab = String(m[1]).replace(/\s+/g, " ").trim();
           if (lab === "증시총평") lab = "증시 총평";
           if (lab === "증시단상") lab = "증시 단상";
+          if (lab === "증권 소설") lab = "증권소설";
           return "[" + lab + "]";
         }
 
@@ -574,8 +597,10 @@
         }
 
         // 1) 문장 중간 <br>·빈 줄 복구 — 소타이틀은 본문과 붙이지 않음
+        // 증권소설 구간은 모바일 편집 줄바꿈을 절대 이어 붙이지 않음
         var healed = [];
         var bufLine = "";
+        var inNovel = false;
         function pushBuf() {
           if (bufLine) { healed.push(fixSpaces(bufLine)); bufLine = ""; }
         }
@@ -583,22 +608,38 @@
           var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           hl = stripMarks(hl);
           if (!hl || hl === "§§") {
-            // §§ = 사람 문단 간격(절대 삭제). 조사 미완성만 빈 줄 너머로 이음.
-            if (hl !== "§§" && bufLine && isIncomplete(bufLine)) continue;
+            // §§ = 사람 문단 간격(절대 삭제). 소설 구간·완결문은 빈 줄 유지.
+            if (hl !== "§§" && !inNovel && bufLine && isIncomplete(bufLine)) continue;
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
+            continue;
+          }
+          // 증권소설 실사 썸네일 — stripMarks 전에 확보
+          var nimgM = hl.match(/^«NIMG»\s*(\S[\s\S]*)$/i) || hl.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i);
+          if (nimgM) {
+            pushBuf();
+            healed.push("NIMG:" + String(nimgM[1] || "").trim());
             continue;
           }
           var split = splitLeadingLabel(hl);
           if (split) {
             pushBuf();
             healed.push(split.label);
+            inNovel = (split.label === "[증권소설]");
             hl = split.rest;
             if (!hl) continue;
           }
           if (asSub(hl) || isProverb(hl)) {
             pushBuf();
             healed.push(hl);
+            if (asSub(hl)) inNovel = (asSub(hl) === "[증권소설]");
+            if (isProverb(hl)) inNovel = false;
+            continue;
+          }
+          if (inNovel) {
+            // 증권소설: 한 줄=한 줄 그대로
+            pushBuf();
+            healed.push(fixSpaces(hl));
             continue;
           }
           if (!bufLine) {
@@ -614,7 +655,7 @@
         }
         pushBuf();
 
-        # 1b) 완결 문장은 붙이지 않음(한 문장=한 줄). §§만 큰 문단 간격.
+        // 1b) 완결 문장은 붙이지 않음(한 문장=한 줄). §§만 큰 문단 간격.
         // (예전 flow-merge는 문장을 한 덩어리로 붙여 가독성을 해침)
         var flowed = [];
         for (var fi = 0; fi < healed.length; fi++) {
@@ -639,6 +680,11 @@
             if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
               tokens.push({ k: "gap" });
             }
+            continue;
+          }
+          if (line.indexOf("NIMG:") === 0) {
+            var nu = line.slice(5).trim();
+            if (nu) tokens.push({ k: "nimg", v: nu });
             continue;
           }
           if (/^【\s*증시\s*총평/.test(line)) {
@@ -708,13 +754,32 @@
         }
 
         var out = [];
+        var nimgBuf = [];
+        function flushNimg() {
+          if (!nimgBuf.length) return;
+          var imgs = nimgBuf.slice(0, 3).map(function (u) {
+            return (
+              '<img src="' +
+              esc(u) +
+              '" alt="" loading="lazy" onerror="this.classList.add(\'thumb-broken\');" />'
+            );
+          }).join("");
+          out.push('<div class="novel-thumbs">' + imgs + "</div>");
+          nimgBuf = [];
+        }
         for (var oi = 0; oi < tokens.length; oi++) {
           var tok = tokens[oi];
+          if (tok.k === "nimg") {
+            nimgBuf.push(tok.v);
+            continue;
+          }
+          flushNimg();
           if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
           else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
           else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
           else out.push('<p class="seg">' + tok.v + "</p>");
         }
+        flushNimg();
         return '<div class="body">' + out.join("") + "</div>";
       }
 
@@ -816,9 +881,10 @@
                   && b.indexOf("[시황]") < 0) {
                 continue;
               }
-              // 신규 4칸 형식([시황] 등) 또는 옛 마커 있으면 OK
+              // 신규 5칸 형식([시황] 등) 또는 옛 마커 있으면 OK
               var hasNew = b.indexOf("[시황]") >= 0 || b.indexOf("[증시 총평]") >= 0
-                || b.indexOf("[증시 단상]") >= 0 || b.indexOf("[끝마치며]") >= 0
+                || b.indexOf("[증시 단상]") >= 0 || b.indexOf("[증권소설]") >= 0
+                || b.indexOf("[끝마치며]") >= 0
                 || b.indexOf("【시황】") >= 0;
               var hasOld = b.indexOf("【금일 시황") >= 0 || b.indexOf("【당일 시황") >= 0
                 || b.indexOf("【전일 시황") >= 0 || b.indexOf("【근일 시황") >= 0
