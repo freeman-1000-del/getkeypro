@@ -605,20 +605,33 @@
           if (bufLine) { healed.push(fixSpaces(bufLine)); bufLine = ""; }
         }
         for (var hi = 0; hi < parts.length; hi++) {
-          var hl = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
-          hl = stripMarks(hl);
+          var hlRaw = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
+          // 증권소설 실사 썸네일 — stripMarks 전에 마커·URL 확보
+          var nimgM =
+            hlRaw.match(/^«NIMG»\s*(\S[\s\S]*)$/i) ||
+            hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i) ||
+            hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i);
+          if (nimgM) {
+            pushBuf();
+            healed.push("NIMG:" + String(nimgM[1] || "").trim());
+            continue;
+          }
+          // 이미 발행된 글: 마커가 벗겨지고 URL만 남은 경우(소설 구간)
+          if (
+            inNovel &&
+            (/^https?:\/\/\S+\.(jpg|jpeg|png|webp)(\?\S*)?$/i.test(hlRaw) ||
+              /^https?:\/\/\S*\/thumbs\/\S+/i.test(hlRaw))
+          ) {
+            pushBuf();
+            healed.push("NIMG:" + hlRaw);
+            continue;
+          }
+          var hl = stripMarks(hlRaw);
           if (!hl || hl === "§§") {
             // §§ = 사람 문단 간격(절대 삭제). 소설 구간·완결문은 빈 줄 유지.
             if (hl !== "§§" && !inNovel && bufLine && isIncomplete(bufLine)) continue;
             pushBuf();
             if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
-            continue;
-          }
-          // 증권소설 실사 썸네일 — stripMarks 전에 확보
-          var nimgM = hl.match(/^«NIMG»\s*(\S[\s\S]*)$/i) || hl.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i);
-          if (nimgM) {
-            pushBuf();
-            healed.push("NIMG:" + String(nimgM[1] || "").trim());
             continue;
           }
           var split = splitLeadingLabel(hl);
