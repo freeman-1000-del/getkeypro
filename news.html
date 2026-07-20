@@ -612,88 +612,56 @@
           return { label: lab, rest: String(m[2] || "").trim() };
         }
 
-        // 1) 문장 중간 <br>·빈 줄 복구 — 소타이틀은 본문과 붙이지 않음
-        // 증권소설 구간은 모바일 편집 줄바꿈을 절대 이어 붙이지 않음
+        // 1) 모바일 원판 보존 — 전 구간 한 줄=한 줄. 절대 이어 붙여 긴 문장으로 만들지 않음.
+        // §§(빈 줄)만 문단 간격. 관리자가 붙여 넣은 줄바꿈을 사이트에서 합치지 않음.
         var healed = [];
-        var bufLine = "";
         var inNovel = false;
-        function pushBuf() {
-          if (bufLine) { healed.push(fixSpaces(bufLine)); bufLine = ""; }
-        }
         for (var hi = 0; hi < parts.length; hi++) {
           var hlRaw = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
-          // 증권소설 실사 썸네일 — stripMarks 전에 마커·URL 확보
           var cimgM =
             hlRaw.match(/^«CIMG»\s*(\S[\s\S]*)$/i) ||
             hlRaw.match(/^&laquo;CIMG&raquo;\s*(\S[\s\S]*)$/i);
           if (cimgM) {
-            pushBuf();
             healed.push("CIMG:" + String(cimgM[1] || "").trim());
             continue;
           }
           var nimgM =
             hlRaw.match(/^«NIMG»\s*(\S[\s\S]*)$/i) ||
-            hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i) ||
             hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i);
           if (nimgM) {
-            pushBuf();
             healed.push("NIMG:" + String(nimgM[1] || "").trim());
             continue;
           }
-          // 이미 발행된 글: 마커가 벗겨지고 URL만 남은 경우(소설 구간)
           if (
             inNovel &&
             (/^https?:\/\/\S+\.(jpg|jpeg|png|webp)(\?\S*)?$/i.test(hlRaw) ||
               /^https?:\/\/\S*\/thumbs\/\S+/i.test(hlRaw))
           ) {
-            pushBuf();
             healed.push("NIMG:" + hlRaw);
             continue;
           }
           var hl = stripMarks(hlRaw);
           if (!hl || hl === "§§") {
-            // §§ = 사람 문단 간격(절대 삭제). 소설 구간·완결문은 빈 줄 유지.
-            if (hl !== "§§" && !inNovel && bufLine && isIncomplete(bufLine)) continue;
-            pushBuf();
             if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
             continue;
           }
           var split = splitLeadingLabel(hl);
           if (split) {
-            pushBuf();
             healed.push(split.label);
-            inNovel = (split.label === "[증권소설]");
+            inNovel = split.label === "[증권소설]";
             hl = split.rest;
             if (!hl) continue;
           }
           if (asSub(hl) || isProverb(hl)) {
-            pushBuf();
             healed.push(hl);
-            if (asSub(hl)) inNovel = (asSub(hl) === "[증권소설]");
+            if (asSub(hl)) inNovel = asSub(hl) === "[증권소설]";
             if (isProverb(hl)) inNovel = false;
             continue;
           }
-          if (inNovel) {
-            // 증권소설: 한 줄=한 줄 그대로
-            pushBuf();
-            healed.push(fixSpaces(hl));
-            continue;
-          }
-          if (!bufLine) {
-            bufLine = hl;
-          } else if (isIncomplete(bufLine)) {
-            bufLine = joinSoft(bufLine, hl);
-          } else if (endsSentence(bufLine) || asSub(bufLine)) {
-            pushBuf();
-            bufLine = hl;
-          } else {
-            bufLine = joinSoft(bufLine, hl);
-          }
+          healed.push(hl);
         }
-        pushBuf();
 
-        // 1b) 완결 문장은 붙이지 않음(한 문장=한 줄). §§만 큰 문단 간격.
-        // (예전 flow-merge는 문장을 한 덩어리로 붙여 가독성을 해침)
+        // 연속 §§ 정리만 (내용 합치기 없음)
         var flowed = [];
         for (var fi = 0; fi < healed.length; fi++) {
           var fl = String(healed[fi] || "").trim();
