@@ -350,7 +350,23 @@
       color: #d8dee6;
     }
     .mk-chart-wrap {
-      margin: 8px var(--pad) 20px;
+      margin: 8px 0 18px;
+      padding: 0;
+    }
+    .mk-chart-wrap img {
+      display: block;
+      width: 100%;
+      max-width: 680px;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #0f141b;
+    }
+    .mk-chart-wrap figcaption {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #9aa4b2;
+      word-break: keep-all;
     }
 
     .ad-slot {
@@ -607,6 +623,14 @@
         for (var hi = 0; hi < parts.length; hi++) {
           var hlRaw = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
           // 증권소설 실사 썸네일 — stripMarks 전에 마커·URL 확보
+          var cimgM =
+            hlRaw.match(/^«CIMG»\s*(\S[\s\S]*)$/i) ||
+            hlRaw.match(/^&laquo;CIMG&raquo;\s*(\S[\s\S]*)$/i);
+          if (cimgM) {
+            pushBuf();
+            healed.push("CIMG:" + String(cimgM[1] || "").trim());
+            continue;
+          }
           var nimgM =
             hlRaw.match(/^«NIMG»\s*(\S[\s\S]*)$/i) ||
             hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i) ||
@@ -693,6 +717,11 @@
             if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
               tokens.push({ k: "gap" });
             }
+            continue;
+          }
+          if (line.indexOf("CIMG:") === 0) {
+            var cu = line.slice(5).trim();
+            if (cu) tokens.push({ k: "cimg", v: cu });
             continue;
           }
           if (line.indexOf("NIMG:") === 0) {
@@ -787,6 +816,30 @@
             continue;
           }
           flushNimg();
+          if (tok.k === "cimg") {
+            var rawC = String(tok.v || "");
+            var curl = rawC;
+            var ccap = "";
+            var pipe = rawC.indexOf("|");
+            if (pipe >= 0) {
+              curl = rawC.slice(0, pipe).trim();
+              ccap = rawC.slice(pipe + 1).trim();
+            }
+            if (curl) {
+              out.push(
+                '<figure class="mk-chart-wrap"><img src="' +
+                  esc(curl) +
+                  '" alt="' +
+                  esc(ccap) +
+                  '" loading="lazy" onerror="this.style.display=\'none\'" />' +
+                  (ccap
+                    ? "<figcaption>" + esc(ccap) + "</figcaption>"
+                    : "") +
+                  "</figure>"
+              );
+            }
+            continue;
+          }
           if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
           else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
           else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
