@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MoneyKey Report</title>
+  <meta name="description" content="MoneyKey Report — 모바일 주식 리포트" />
+  <meta name="robots" content="index,follow" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!--
+    =============================================================================
+    MoneyKey Report 독립 뉴스룸 (/news) — getkeypro 유료 메인과 분리
+    [CONFIG] 기획자 입력 — 큰따옴표 안에 값만 붙여넣으세요
+    =============================================================================
+  -->
+  <script>
+    window.MONEYKEY_CONFIG = {
+      SUPABASE_URL: "https://ajvtyotblrtexcxuazqm.supabase.co",
+      SUPABASE_ANON_KEY: "sb_publishable_cmn9eVnnvaAjXVJWa6bRQA_qrb1xglQ",
+      TABLE: "posts",
+      ADSENSE_CLIENT: "ca-pub-XXXXXXXXXXXXXXXX",
+      ADSENSE_SLOT: "XXXXXXXXXX"
+    };
+  </script>
+  <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+    :root {
+      --bg: #0d1117;
+      --bg-soft: #11161d;
+      --card: #161b22;
+      --card-lift: #1c2330;
+      --txt: #e6edf3;
+      --sub: #8b949e;
+      --line: rgba(255, 255, 255, 0.06);
+      --accent: #3dd68c;
+      --accent-dim: rgba(61, 214, 140, 0.14);
+      --nav: #1a1f27;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      --pad: 20px;
+      --radius: 18px;
+      --max: 720px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(1200px 500px at 50% -10%, rgba(61, 214, 140, 0.07), transparent 55%),
+        var(--bg);
+      color: var(--txt);
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* —— 대문 내비게이션 —— */
+    header.brand {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(180deg, #222833 0%, var(--nav) 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      margin: 0 0 28px;
+      padding: 0;
+    }
+    header.brand .nav-inner {
+      width: min(var(--max), 100%);
+      margin: 0 auto;
+      padding: 20px var(--pad) 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+    }
+    header.brand .logo {
+      display: block;
+      width: 100%;
+      text-decoration: none;
+      color: inherit;
+      line-height: 0;
+    }
+    header.brand .logo img {
+      width: 100%;
+      height: auto;
+      max-height: none;
+      display: block;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+    }
+    header.brand h1.sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    header.brand p {
+      margin: 0;
+      color: var(--sub);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.35;
+      text-align: center;
+      max-width: none;
+    }
+
+    .wrap {
+      width: min(var(--max), 100%);
+      margin: 0 auto;
+      padding: 0 var(--pad) 96px;
+    }
+
+    /* —— 블로그 포스팅 카드 —— */
+    .card {
+      background: linear-gradient(165deg, var(--card-lift) 0%, var(--card) 48%, #131820 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 0;
+      margin: 0 0 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(61, 214, 140, 0.12),
+        0 0 24px rgba(61, 214, 140, 0.05);
+    }
+    .card .meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--sub);
+      margin: 0;
+      padding: 18px var(--pad) 0;
+    }
+    .session-date {
+      color: #a8b3c2;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .tag { display: none; } /* 주식 뱃지 숨김 */
+    .tag::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(
+        100deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.55) 45%,
+        transparent 75%
+      );
+      transform: skewX(-20deg);
+      animation: tag-shine 2.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes tag-glow {
+      0%, 100% {
+        box-shadow:
+          0 0 0 1px rgba(61, 214, 140, 0.28),
+          0 0 10px rgba(61, 214, 140, 0.18);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow:
+          0 0 0 1px rgba(61, 214, 140, 0.55),
+          0 0 18px rgba(61, 214, 140, 0.45);
+        filter: brightness(1.15);
+      }
+    }
+    @keyframes tag-shine {
+      0% { left: -120%; opacity: 0; }
+      15% { opacity: 1; }
+      45% { left: 140%; opacity: 0.9; }
+      100% { left: 140%; opacity: 0; }
+    }
+    .card h2 {
+      margin: 0;
+      padding: 12px var(--pad) 16px;
+      font-size: clamp(20px, 4.2vw, 24px);
+      line-height: 1.45;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #d4af37;
+      text-align: left;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-break: loose;
+    }
+
+    /* 썸네일: 카드 중앙, 적당한 크기 */
+    .thumb {
+      display: block;
+      width: 72%;
+      max-width: 340px;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      margin: 0 auto 20px;
+      border-radius: 12px;
+      background: #0f141b;
+      border: 1px solid var(--line);
+    }
+    .thumb.thumb-broken {
+      display: none;
+    }
+
+    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일에서 어절 중간 끊김 방지 */
+    .body,
+    .body-half {
+      font-size: 18px;
+      line-height: 1.9;
+      color: #d8dee6;
+      padding: 0 var(--pad) 28px;
+      margin: 0;
+      text-align: left;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
+    }
+    .body .seg-label {
+      margin: 1.35em 0 0.65em;
+      color: #d4af37;
+      font-weight: 800;
+      font-size: 1.08em;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .body .seg {
+      margin: 0 0 0.5em;
+      padding: 0;
+      color: #d8dee6;
+      font-weight: 400;
+      font-size: 1em;
+      line-height: 1.75;
+      text-align: left;
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
+    }
+    /* 원문 빈 줄 → 눈에 띄는 문단 간격 */
+    .body .seg-gap {
+      display: block;
+      margin: 0.5em 0;
+      padding: 0;
+      height: 1.35em;
+      min-height: 1.35em;
+      line-height: 1.35em;
+      border: 0;
+      overflow: hidden;
+      visibility: hidden;
+    }
+    .body .seg-proverb {
+      margin: 0.5em 0;
+      color: #7ec8ff !important;
+      font-weight: 700;
+      font-size: 1.05em;
+      line-height: 1.75;
+      text-align: left;
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      word-wrap: normal;
+      line-break: strict;
+      hyphens: none;
+    }
+    /* 증권소설 실사 소형 썸네일 3장 */
+    .body .novel-thumbs {
+      display: flex;
+      gap: 8px;
+      margin: 0.35em 0 1em;
+      padding: 0;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+    .body .novel-thumbs img {
+      flex: 1 1 0;
+      width: 32%;
+      max-width: 112px;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #0f141b;
+      border: 1px solid var(--line);
+    }
+    .body .novel-thumbs img.thumb-broken {
+      display: none;
+    }
+    @media (max-width: 640px) {
+      .body,
+      .body-half,
+      .body .seg,
+      .body .seg-proverb {
+        font-size: 17px;
+        line-height: 1.8;
+        word-break: keep-all;
+        overflow-wrap: normal;
+        word-wrap: normal;
+        line-break: strict;
+        hyphens: none;
+      }
+      .body .seg {
+        margin-bottom: 0.55em;
+      }
+      .body .seg-gap {
+        height: 1.25em;
+        min-height: 1.25em;
+        margin: 0.4em 0;
+      }
+    }
+    .mk-table-wrap {
+      margin: 12px var(--pad) 20px;
+      overflow-x: auto;
+    }
+    .mk-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .mk-table-wrap th,
+    .mk-table-wrap td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      color: #d8dee6;
+    }
+    .mk-chart-wrap {
+      margin: 8px var(--pad) 20px;
+    }
+
+    .ad-slot {
+      margin: 16px var(--pad);
+      padding: 14px;
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.22);
+      min-height: 90px;
+      text-align: center;
+    }
+    .ad-slot .ad-label {
+      font-size: 11px;
+      color: #6b7582;
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .state {
+      text-align: center;
+      color: var(--sub);
+      padding: 64px 16px;
+      font-size: 15px;
+      line-height: 1.7;
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    footer.note {
+      margin-top: 8px;
+      padding: 24px 8px 8px;
+      font-size: 12px;
+      color: var(--sub);
+      text-align: center;
+      line-height: 1.7;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (min-width: 768px) {
+      header.brand .nav-inner {
+        padding: 24px 28px 22px;
+      }
+      header.brand .logo img {
+        padding: 14px 20px;
+        border-radius: 18px;
+      }
+      header.brand p {
+        font-size: 21px;
+      }
+      .tag { font-size: 24px; padding: 9px 20px; }
+      .wrap { padding: 8px 28px 120px; }
+      .card { margin-bottom: 36px; }
+      .card .meta,
+      .card h2,
+      .body,
+      .body-half { padding-left: 28px; padding-right: 28px; }
+      .ad-slot { margin-left: 28px; margin-right: 28px; }
+      .thumb {
+        width: 78%;
+        max-width: 360px;
+        margin-bottom: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="brand">
+    <div class="nav-inner">
+      <a class="logo" href="./news.html">
+        <img src="./moneykey-logo.png" alt="머니키 리포트" width="1024" height="277" />
+      </a>
+      <p>내 손 안에 펼쳐지는 경제</p>
+    </div>
+    <h1 class="sr-only">머니키 리포트</h1>
+  </header>
+  <div class="wrap">
+    <div id="feed" class="state">불러오는 중…</div>
+    <footer class="note">본 페이지는 정보 제공 목적이며 투자 권유가 아닙니다.</footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    (function () {
+      var cfg = window.MONEYKEY_CONFIG || {};
+      var feed = document.getElementById("feed");
+
+      function esc(s) {
+        return String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function adBox(label) {
+        // AdSense 승인 전: 플레이스홀더 노출 없음
+        return "";
+      }
+
+      function isFillerCue(text) {
+        var t = String(text || "").trim();
+        return (
+          t === "첫 번째 소식 보시죠." ||
+          t === "첫 번째 소식입니다." ||
+          t === "다음 소식 보시죠." ||
+          t === "그 다음 소식 보실까요?" ||
+          t === "두 번째 소식 보시죠." ||
+          /^다음은\s*['‘'].+['’']\s*이야기입니다\.?$/.test(t)
+        );
+      }
+
+      function isHookEcho(line, hook) {
+        if (!line || !hook) return false;
+        // 알려진 동어 반복
+        if (
+          line === "요즘 주식 시장이 뒤숭숭하죠?" ||
+          line === "코스피가 하룻새 6.3%나 급락하면서 7000선을 밑돌았습니다."
+        ) {
+          return true;
+        }
+        var nums = hook.match(/\d+(?:\.\d+)?%?/g) || [];
+        if (!nums.length) return false;
+        var numHit = 0;
+        for (var n = 0; n < nums.length; n++) {
+          if (line.indexOf(nums[n]) >= 0) numHit++;
+        }
+        if (!numHit) return false;
+        var keys = ["코스피", "급락", "하룻새", "레버리지", "연금", "고령", "대출", "7000"];
+        var shared = 0;
+        for (var k = 0; k < keys.length; k++) {
+          if (hook.indexOf(keys[k]) >= 0 && line.indexOf(keys[k]) >= 0) shared++;
+        }
+        return shared >= 2;
+      }
+
+      function isClosingCue(line) {
+        return (
+          line === "오늘 준비한 시황 소식은 여기까지입니다." ||
+          line === "오늘 준비한 경제 흐름 소식은 여기까지입니다." ||
+          line.indexOf("오늘 준비한 시황 소식은 여기까지") === 0 ||
+          line.indexOf("오늘 준비한 경제 흐름 소식은 여기까지") === 0
+        );
+      }
+
+      function decorateBody(raw, cardTitle) {
+        var html = String(raw || "");
+        var titleNorm = String(cardTitle || "").replace(/[.\s]+$/g, "").trim();
+        if (html.indexOf("<br") < 0) {
+          html = esc(html).replace(/\n/g, "<br>");
+        }
+        // data-pbrk = 사람이 넣은 문단 빈 줄(절대 이어 붙이지 않음)
+        html = html.replace(/<br[^>]*data-pbrk[^>]*>/gi, "<br>§§<br>");
+        var parts = html.split(/<br\s*\/?>/i);
+
+        function isProverb(t) {
+          var s = String(t || "");
+          return (
+            s.indexOf("오늘의 증시 격언") >= 0 ||
+            s.indexOf("격언입니다") >= 0 ||
+            s.indexOf("소문에 사고") >= 0 ||
+            s.indexOf("뉴스에 팔아") >= 0
+          );
+        }
+
+        function endsSentence(s) {
+          var t = String(s || "").replace(/\s+$/g, "");
+          if (!t) return true;
+          if (asSub(t) || isProverb(t)) return true;
+          if (isIncomplete(t)) return false;
+          if (/[.!?…」』"']$/.test(t)) return true;
+          if (/(습니다|습니까|입니다|합니까|합니다|지요|까요|군요|네요|니다|죠|시다|다|요|까|네|군|함|됨|임|음)\.?$/.test(t)) return true;
+          return false;
+        }
+        function isIncomplete(s) {
+          var t = String(s || "").replace(/\s+$/g, "");
+          if (!t) return false;
+          if (asSub(t) || isProverb(t)) return false;
+          if (/[.!?…」』"']$/.test(t)) return false;
+          if (/(습니다|습니까|입니다|합니까|합니다|지요|까요|군요|네요|니다|죠|시다|다|요|까|네|군|함|됨|임|음)\.?$/.test(t)) return false;
+          if (/(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|에는|으로는|로는|서는|께|께서|이|가|을|를|은|는|의|에|로|와|과|도|만|고|며)$/.test(t)) return true;
+          if (/(며|고|데|던|거나|든지|도록|위해|통해|대한|위한|같은|스런|진|된|한|인|라는|했던|었던|았던)$/.test(t)) return true;
+          return false;
+        }
+
+        function stripMarks(s) {
+          return String(s || "")
+            .replace(/«[A-Z]+»|&laquo;[A-Z]+&raquo;/gi, " ")
+            .replace(/[ \t]+/g, " ")
+            .trim();
+        }
+
+        function suffixStart(s) {
+          return /^(니다|습니다|습니까|세요|시죠|죠|지요|까요|군요|네요|다고|라는|으며|면서)/.test(s);
+        }
+        function joinSoft(a, b) {
+          if (!a) return b;
+          if (!b) return a;
+          if (/[A-Za-z0-9]/.test(a.charAt(a.length - 1)) && /[A-Za-z0-9]/.test(b.charAt(0))) {
+            return a + " " + b;
+          }
+          if (suffixStart(b)) return a + b;
+          return a + " " + b;
+        }
+        function fixSpaces(s) {
+          var held = [];
+          var tmp = String(s || "").replace(/주도주|대형주|중소형주|성장주|가치주|배당주|관련주/g, function (w) {
+            held.push(w);
+            return "\0H" + (held.length - 1) + "\0";
+          });
+          var t = tmp.replace(
+            /(에서|으로|부터|까지|처럼|보다|면서|으며|지만|는데|거나|든지|을|를|은|는|의)(?=[가-힣]{2,})/g,
+            "$1 "
+          );
+          t = t.replace(/에(?![서도는야])(?=[가-힣]{2,})/g, "에 ");
+          t = t.replace(/ {2,}/g, " ");
+          for (var hi = 0; hi < held.length; hi++) {
+            t = t.split("\0H" + hi + "\0").join(held[hi]);
+          }
+          return t;
+        }
+
+        function asSub(t) {
+          var m = String(t || "").trim().match(/^[\[【]\s*([^\]】]{1,40})\s*[\]】]$/);
+          if (!m) return null;
+          var lab = String(m[1]).replace(/\s+/g, " ").trim();
+          if (lab === "증시총평") lab = "증시 총평";
+          if (lab === "증시단상") lab = "증시 단상";
+          if (lab === "증권 소설") lab = "증권소설";
+          return "[" + lab + "]";
+        }
+
+        function splitLeadingLabel(line) {
+          var m = String(line || "").trim().match(/^([\[【]\s*[^\]】]{1,40}\s*[\]】])\s*(.+)$/);
+          if (!m) return null;
+          var lab = asSub(m[1].replace(/【/g, "[").replace(/】/g, "]"));
+          if (!lab) {
+            var rawLab = m[1].replace(/【/g, "[").replace(/】/g, "]").replace(/\s+/g, " ").trim();
+            lab = rawLab;
+          }
+          return { label: lab, rest: String(m[2] || "").trim() };
+        }
+
+        // 1) 문장 중간 <br>·빈 줄 복구 — 소타이틀은 본문과 붙이지 않음
+        // 증권소설 구간은 모바일 편집 줄바꿈을 절대 이어 붙이지 않음
+        var healed = [];
+        var bufLine = "";
+        var inNovel = false;
+        function pushBuf() {
+          if (bufLine) { healed.push(fixSpaces(bufLine)); bufLine = ""; }
+        }
+        for (var hi = 0; hi < parts.length; hi++) {
+          var hlRaw = String(parts[hi] || "").replace(/&nbsp;/gi, " ").trim();
+          // 증권소설 실사 썸네일 — stripMarks 전에 마커·URL 확보
+          var nimgM =
+            hlRaw.match(/^«NIMG»\s*(\S[\s\S]*)$/i) ||
+            hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i) ||
+            hlRaw.match(/^&laquo;NIMG&raquo;\s*(\S[\s\S]*)$/i);
+          if (nimgM) {
+            pushBuf();
+            healed.push("NIMG:" + String(nimgM[1] || "").trim());
+            continue;
+          }
+          // 이미 발행된 글: 마커가 벗겨지고 URL만 남은 경우(소설 구간)
+          if (
+            inNovel &&
+            (/^https?:\/\/\S+\.(jpg|jpeg|png|webp)(\?\S*)?$/i.test(hlRaw) ||
+              /^https?:\/\/\S*\/thumbs\/\S+/i.test(hlRaw))
+          ) {
+            pushBuf();
+            healed.push("NIMG:" + hlRaw);
+            continue;
+          }
+          var hl = stripMarks(hlRaw);
+          if (!hl || hl === "§§") {
+            // §§ = 사람 문단 간격(절대 삭제). 소설 구간·완결문은 빈 줄 유지.
+            if (hl !== "§§" && !inNovel && bufLine && isIncomplete(bufLine)) continue;
+            pushBuf();
+            if (healed.length && healed[healed.length - 1] !== "§§") healed.push("§§");
+            continue;
+          }
+          var split = splitLeadingLabel(hl);
+          if (split) {
+            pushBuf();
+            healed.push(split.label);
+            inNovel = (split.label === "[증권소설]");
+            hl = split.rest;
+            if (!hl) continue;
+          }
+          if (asSub(hl) || isProverb(hl)) {
+            pushBuf();
+            healed.push(hl);
+            if (asSub(hl)) inNovel = (asSub(hl) === "[증권소설]");
+            if (isProverb(hl)) inNovel = false;
+            continue;
+          }
+          if (inNovel) {
+            // 증권소설: 한 줄=한 줄 그대로
+            pushBuf();
+            healed.push(fixSpaces(hl));
+            continue;
+          }
+          if (!bufLine) {
+            bufLine = hl;
+          } else if (isIncomplete(bufLine)) {
+            bufLine = joinSoft(bufLine, hl);
+          } else if (endsSentence(bufLine) || asSub(bufLine)) {
+            pushBuf();
+            bufLine = hl;
+          } else {
+            bufLine = joinSoft(bufLine, hl);
+          }
+        }
+        pushBuf();
+
+        // 1b) 완결 문장은 붙이지 않음(한 문장=한 줄). §§만 큰 문단 간격.
+        // (예전 flow-merge는 문장을 한 덩어리로 붙여 가독성을 해침)
+        var flowed = [];
+        for (var fi = 0; fi < healed.length; fi++) {
+          var fl = String(healed[fi] || "").trim();
+          if (!fl || fl === "§§") {
+            if (flowed.length && flowed[flowed.length - 1] !== "§§") flowed.push("§§");
+            continue;
+          }
+          flowed.push(fl);
+        }
+        while (flowed.length && flowed[flowed.length - 1] === "§§") flowed.pop();
+        healed = flowed;
+
+        // 2) 토큰화 (빈 줄 = 원문이 넣은 문단 간격만)
+        var tokens = [];
+        var proverbs = [];
+        var seenPr = {};
+        for (var i = 0; i < healed.length; i++) {
+          var rawLine = healed[i];
+          var line = String(rawLine || "").trim();
+          if (!line || line === "§§") {
+            if (tokens.length && tokens[tokens.length - 1].k !== "gap") {
+              tokens.push({ k: "gap" });
+            }
+            continue;
+          }
+          if (line.indexOf("NIMG:") === 0) {
+            var nu = line.slice(5).trim();
+            if (nu) tokens.push({ k: "nimg", v: nu });
+            continue;
+          }
+          if (/^【\s*증시\s*총평/.test(line)) {
+            tokens.push({ k: "label", v: "[증시 총평]" });
+            continue;
+          }
+          if (line.indexOf("【전일 시황") === 0 || line.indexOf("【금일 시황") === 0
+              || line.indexOf("【당일 시황") === 0 || line.indexOf("【근일 시황") === 0
+              || line.indexOf("【직전 시황") === 0 || line.indexOf("【한국 증시") === 0
+              || line.indexOf("【핵심") === 0 || line.indexOf("【뉴욕") === 0
+              || line.indexOf("【기타") === 0 || line.indexOf("【관리자") === 0
+              || line.indexOf("【내 생각") === 0 || line.indexOf("【코멘트") === 0) {
+            continue;
+          }
+          if (line.indexOf("«TABLE»") === 0 || line.indexOf("«CHART»") === 0) continue;
+          if (isFillerCue(line) || line.indexOf("[MoneyKey Report]") === 0) continue;
+          if (line.indexOf("«H»") === 0 || line.indexOf("&laquo;H&raquo;") === 0) {
+            var hook = stripMarks(line);
+            var hn = String(hook || "").replace(/[.\s]+$/g, "").trim();
+            if (titleNorm && hn && (hn === titleNorm || titleNorm.indexOf(hn) === 0)) continue;
+          }
+          var split2 = splitLeadingLabel(line);
+          if (split2) {
+            tokens.push({ k: "label", v: split2.label });
+            line = split2.rest;
+            if (!line) continue;
+          }
+          var t = stripMarks(line);
+          if (!t) continue;
+          var sub = asSub(t);
+          if (sub) {
+            tokens.push({ k: "label", v: sub });
+            continue;
+          }
+          if (isProverb(t)) {
+            if (!seenPr[t]) { seenPr[t] = 1; proverbs.push(t); }
+            continue;
+          }
+          tokens.push({ k: "text", v: t });
+        }
+
+        // 3) 격언 → [증시 단상] 본문 뒤(다음 소타이틀 직전). 맨 앞에 단상 라벨을 만들지 않음
+        if (proverbs.length) {
+          var prToks = proverbs.map(function (p) { return { k: "proverb", v: p }; });
+          var insertAt = -1;
+          var inNote = false;
+          var idxEnd = -1;
+          var idxAfterReview = -1;
+          for (var ti = 0; ti < tokens.length; ti++) {
+            if (tokens[ti].k === "label") {
+              if (tokens[ti].v === "[끝마치며]") idxEnd = ti;
+              if (inNote) { insertAt = ti; break; }
+              inNote = (tokens[ti].v === "[증시 단상]");
+              if (inNote) insertAt = ti + 1;
+              if (tokens[ti].v === "[증시 총평]") idxAfterReview = ti + 1;
+            } else if (inNote) {
+              insertAt = ti + 1;
+            } else if (tokens[ti].k === "label" && tokens[ti].v === "[증시 총평]") {
+              idxAfterReview = ti + 1;
+            }
+          }
+          // 단상 구간이 있으면 그 끝, 없으면 끝마치며 직전, 없으면 총평 뒤
+          if (insertAt < 0 && idxEnd >= 0) insertAt = idxEnd;
+          if (insertAt < 0 && idxAfterReview >= 0) insertAt = idxAfterReview;
+          if (insertAt < 0) insertAt = tokens.length;
+          tokens = tokens.slice(0, insertAt).concat(prToks).concat(tokens.slice(insertAt));
+        }
+
+        var out = [];
+        var nimgBuf = [];
+        function flushNimg() {
+          if (!nimgBuf.length) return;
+          var imgs = nimgBuf.slice(0, 3).map(function (u) {
+            return (
+              '<img src="' +
+              esc(u) +
+              '" alt="" loading="lazy" onerror="this.classList.add(\'thumb-broken\');" />'
+            );
+          }).join("");
+          out.push('<div class="novel-thumbs">' + imgs + "</div>");
+          nimgBuf = [];
+        }
+        for (var oi = 0; oi < tokens.length; oi++) {
+          var tok = tokens[oi];
+          if (tok.k === "nimg") {
+            nimgBuf.push(tok.v);
+            continue;
+          }
+          flushNimg();
+          if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
+          else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
+          else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
+          else out.push('<p class="seg">' + tok.v + "</p>");
+        }
+        flushNimg();
+        return '<div class="body">' + out.join("") + "</div>";
+      }
+
+      function bodyWithMidAd(raw, cardTitle) {
+        return decorateBody(raw, cardTitle);
+      }
+
+      function sessionDateFromBody(body) {
+        var s = String(body || "");
+        var m = s.match(/【당일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【전일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【금일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/직전 거래일\s*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【근일 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        if (m) return m[1];
+        m = s.match(/【직전 시황[^\d]*(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : "";
+      }
+
+      function fmtSessionLabel(ymd, editionHint) {
+        if (!ymd) return "";
+        var p = ymd.split("-");
+        if (p.length !== 3) return ymd;
+        var label = editionHint === "preopen" ? "장전" : "장마감";
+        return p[0] + ". " + p[1] + ". " + p[2] + ". " + label;
+      }
+
+      function fmtDate(iso) {
+        try {
+          var d = new Date(iso);
+          if (isNaN(d.getTime())) return "";
+          return d.toLocaleString("ko-KR", {
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit"
+          });
+        } catch (e) { return ""; }
+      }
+
+      function cardHtml(row) {
+        var title = row.title || "";
+        var img = row.image_url || "";
+        var body = row.body || "";
+        var sess = sessionDateFromBody(body);
+        var dateLabel = sess
+          ? fmtSessionLabel(sess, body.indexOf("【뉴욕증시") >= 0 ? "preopen" : "close")
+          : fmtDate(row.created_at);
+        return (
+          '<article class="card">' +
+          '<div class="meta"><span class="session-date">' +
+          esc(dateLabel) +
+          "</span></div>" +
+          (img
+            ? '<img class="thumb" src="' + esc(img) + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + esc(String(row.id || "").slice(0, 8)) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
+            : "") +
+          adBox("썸네일 바로 아래") +
+          "<h2>" + esc(title) + "</h2>" +
+          bodyWithMidAd(body, title) +
+          "</article>"
+        );
+      }
+
+      async function load() {
+        if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+          feed.innerHTML = '<div class="state">CONFIG 키를 입력하세요.</div>';
+          return;
+        }
+        var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+        var table = cfg.TABLE || "posts";
+        var attempt = 0;
+        var lastErr = null;
+        while (attempt < 3) {
+          attempt += 1;
+          try {
+            // 1) 본문만 먼저 (대용량 data-URI 썸네일 제외 → 타임아웃 방지)
+            var res = await client
+              .from(table)
+              .select("id,title,body,category,created_at")
+              .eq("category", "주식")
+              .order("created_at", { ascending: false })
+              .limit(20);
+            if (res.error) throw res.error;
+            var rows = res.data || [];
+            var picked = [];
+            for (var i = 0; i < rows.length; i++) {
+              var row = rows[i];
+              var t = String(row.title || "");
+              var b = String(row.body || "");
+              if (t.indexOf("__probe__") >= 0) continue;
+              if (t.indexOf("외 1건") >= 0) continue; // 옛 기사형 폐기
+              if (t.indexOf("[삭제예정]") >= 0) continue;
+              // 가상 '금일'만 있고 당일/전일 구조가 없으면 스킵(옛 샘플)
+              if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【당일 시황") < 0
+                  && b.indexOf("【전일 시황") < 0 && b.indexOf("【근일 시황") < 0
+                  && b.indexOf("【직전 시황") < 0
+                  && b.indexOf("[시황]") < 0) {
+                continue;
+              }
+              // 신규 5칸 형식([시황] 등) 또는 옛 마커 있으면 OK
+              var hasNew = b.indexOf("[시황]") >= 0 || b.indexOf("[증시 총평]") >= 0
+                || b.indexOf("[증시 단상]") >= 0 || b.indexOf("[증권소설]") >= 0
+                || b.indexOf("[끝마치며]") >= 0
+                || b.indexOf("【시황】") >= 0;
+              var hasOld = b.indexOf("【금일 시황") >= 0 || b.indexOf("【당일 시황") >= 0
+                || b.indexOf("【전일 시황") >= 0 || b.indexOf("【근일 시황") >= 0
+                || b.indexOf("【직전 시황") >= 0 || b.indexOf("«F»") >= 0
+                || b.indexOf("«REVIEW»") >= 0;
+              if (!hasNew && !hasOld) continue;
+              picked.push(row);
+              break; // 최신 시황 1건
+            }
+            if (!picked.length) {
+              feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
+              return;
+            }
+            // 이미지 없이 먼저 렌더
+            feed.innerHTML = picked.map(function (r) {
+              return cardHtml(Object.assign({}, r, { image_url: "" }));
+            }).join("");
+
+            // 2) 썸네일만 별도 조회 (data-URI·초대형 이미지는 스킵)
+            var ids = picked.map(function (r) { return r.id; });
+            var imgRes = await client
+              .from(table)
+              .select("id,image_url")
+              .in("id", ids);
+            if (!imgRes.error && imgRes.data) {
+              var byId = {};
+              imgRes.data.forEach(function (r) {
+                var u = r.image_url || "";
+                // base64 data-URI는 용량·표시 모두 문제 → 무시
+                if (u.indexOf("data:") === 0) u = "";
+                byId[r.id] = u;
+              });
+              picked.forEach(function (r) { r.image_url = byId[r.id] || ""; });
+              feed.innerHTML = picked.map(cardHtml).join("");
+            }
+            return;
+          } catch (err) {
+            lastErr = err;
+            // 타임아웃이면 짧게 재시도
+            var msg = (err && err.message) || String(err);
+            if (msg.indexOf("timeout") < 0 || attempt >= 3) break;
+            await new Promise(function (r) { setTimeout(r, 700 * attempt); });
+          }
+        }
+        feed.innerHTML =
+          '<div class="state">불러오기 실패: ' +
+          esc((lastErr && lastErr.message) || String(lastErr)) +
+          "<br><button type='button' id='mk-retry' style='margin-top:12px;padding:8px 14px;border-radius:10px;border:0;background:#3dd68c;color:#0d1117;font-weight:700;cursor:pointer'>다시 시도</button></div>";
+        var btn = document.getElementById("mk-retry");
+        if (btn) btn.onclick = function () { feed.innerHTML = '<div class="state">불러오는 중…</div>'; load(); };
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>
