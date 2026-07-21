@@ -440,6 +440,58 @@
       border-top: 1px solid var(--line);
     }
 
+    /* 모바일: 전체 폭 · 강제 줄바꿈 이중접힘 방지(JS에서 br→공백) */
+    @media (max-width: 720px) {
+      :root {
+        --pad: 16px;
+        --max: 100%;
+        --radius: 0;
+      }
+      html, body {
+        overflow-x: hidden;
+      }
+      header.brand {
+        width: 100%;
+        margin: 0 0 16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+      .wrap {
+        width: 100%;
+        padding: 0 0 72px;
+      }
+      .card {
+        border-radius: 0;
+        margin-bottom: 16px;
+      }
+      .body,
+      .body-half,
+      .body .seg,
+      .body .seg-proverb {
+        font-size: 16px;
+        line-height: 1.65;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      .card h2 {
+        font-size: 1.15rem;
+      }
+      .thumb {
+        width: calc(100% - (var(--pad) * 2));
+        max-width: none;
+        margin: 4px var(--pad) 14px;
+        aspect-ratio: 1 / 1;
+      }
+      .body .novel-thumbs img {
+        width: min(100%, 280px);
+      }
+      header.brand .sub-tabs button {
+        font-size: 15px;
+        padding: 7px 14px;
+      }
+    }
+
     @media (min-width: 768px) {
       header.brand .nav-inner {
         padding: 18px var(--pad) 16px;
@@ -510,6 +562,11 @@
       var feed = document.getElementById("feed");
       var viewMode = "analysis";
       var cachedRows = null;
+      var narrowMq = window.matchMedia("(max-width: 720px)");
+
+      function isNarrowScreen() {
+        return !!(narrowMq && narrowMq.matches);
+      }
 
       function setView(mode) {
         viewMode = mode === "novel" ? "novel" : "analysis";
@@ -530,6 +587,21 @@
             setView(m);
           });
         }
+      })();
+
+      // 모바일↔PC 전환 시 본문 줄바꿈 방식 다시 그림
+      (function bindNarrowResize() {
+        var lastNarrow = isNarrowScreen();
+        function onChange() {
+          var now = isNarrowScreen();
+          if (now === lastNarrow) return;
+          lastNarrow = now;
+          if (cachedRows && cachedRows.length) {
+            feed.innerHTML = cachedRows.map(cardHtml).join("");
+          }
+        }
+        if (narrowMq.addEventListener) narrowMq.addEventListener("change", onChange);
+        else if (narrowMq.addListener) narrowMq.addListener(onChange);
       })();
 
       function esc(s) {
@@ -870,8 +942,11 @@
         }
         function flushPara() {
           if (!paraBuf.length) return;
-          // 연속 줄 = 한 문단(<br>). 빈 줄(gap)에서만 문단을 끊음.
-          out.push('<p class="seg">' + paraBuf.join("<br>") + "</p>");
+          // PC: 원문 줄바꿈 유지(<br>). 모바일: 이어 붙여 폰이 한 번만 접게(이중 줄바꿈 방지).
+          var joined = isNarrowScreen()
+            ? paraBuf.join(" ")
+            : paraBuf.join("<br>");
+          out.push('<p class="seg">' + joined + "</p>");
           paraBuf = [];
         }
         for (var oi = 0; oi < tokens.length; oi++) {
