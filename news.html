@@ -772,17 +772,24 @@
           if (lab === "증시총평") lab = "증시 총평";
           if (lab === "증시단상") lab = "증시 단상";
           if (lab === "증권 소설") lab = "증권소설";
+          // 5칸 섹션만 소타이틀. [준우의 …] 같은 소설 안 제목은 본문.
+          var known = {
+            "시황": 1,
+            "증시 총평": 1,
+            "증시 단상": 1,
+            "증권소설": 1,
+            "끝마치며": 1
+          };
+          if (!known[lab]) return null;
           return "[" + lab + "]";
         }
 
         function splitLeadingLabel(line) {
           var m = String(line || "").trim().match(/^([\[【]\s*[^\]】]{1,40}\s*[\]】])\s*(.+)$/);
           if (!m) return null;
+          // 알려진 5칸만 분리. [준우의 …] 등은 본문 한 줄로 둠.
           var lab = asSub(m[1].replace(/【/g, "[").replace(/】/g, "]"));
-          if (!lab) {
-            var rawLab = m[1].replace(/【/g, "[").replace(/】/g, "]").replace(/\s+/g, " ").trim();
-            lab = rawLab;
-          }
+          if (!lab) return null;
           return { label: lab, rest: String(m[2] || "").trim() };
         }
 
@@ -828,7 +835,9 @@
           }
           if (asSub(hl) || isProverb(hl)) {
             healed.push(hl);
-            if (asSub(hl)) inNovel = asSub(hl) === "[증권소설]";
+            // 알려진 섹션만 소설 구간 on/off. 그 외 [제목]은 본문.
+            var subLab = asSub(hl);
+            if (subLab) inNovel = subLab === "[증권소설]";
             if (isProverb(hl)) inNovel = false;
             continue;
           }
@@ -931,10 +940,27 @@
           var mode = viewMode === "novel" ? "novel" : "analysis";
           var kept = [];
           var inNovel = false;
+          var sectionSwitch = {
+            "[시황]": 1,
+            "[증시 총평]": 1,
+            "[증시 단상]": 1,
+            "[증권소설]": 1,
+            "[끝마치며]": 1
+          };
           for (var fi = 0; fi < tokens.length; fi++) {
             var ft = tokens[fi];
             if (ft.k === "label") {
-              inNovel = ft.v === "[증권소설]";
+              if (ft.v === "[증권소설]") {
+                inNovel = true;
+                if (mode === "novel") kept.push(ft);
+                continue;
+              }
+              if (sectionSwitch[ft.v]) {
+                inNovel = false;
+                if (mode === "analysis") kept.push(ft);
+                continue;
+              }
+              // 기타 라벨(거의 없음) — 현재 구간에 속하면 유지
               if (mode === "novel") {
                 if (inNovel) kept.push(ft);
               } else if (!inNovel) {
