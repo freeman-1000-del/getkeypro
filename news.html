@@ -342,25 +342,22 @@
       line-break: strict;
       hyphens: none;
     }
-    /* 증권소설 실사 소형 썸네일 — 좌측 정렬·고정 소형 */
+    /* 증권소설 삽화: 본문 칼럼과 같은 너비(읽기 컨텐츠) */
     .body .novel-thumbs {
-      display: flex;
-      gap: 8px;
-      margin: 0.35em 0 1em;
+      display: block;
+      margin: 0.5em 0 1em;
       padding: 0;
-      justify-content: flex-start;
-      align-items: flex-start;
-      flex-wrap: wrap;
     }
     .body .novel-thumbs img {
-      flex: 0 0 auto;
-      width: 264px;
+      display: block;
+      width: 100%;
       max-width: 100%;
       height: auto;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: 12px;
       background: #0f141b;
       border: 1px solid var(--line);
+      margin: 0 0 10px;
     }
     .body .novel-thumbs img.thumb-broken {
       display: none;
