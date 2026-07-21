@@ -79,7 +79,6 @@
     }
     header.brand .nav-inner {
       width: min(var(--max), 100%);
-      min-width: 980px;
       margin: 0 auto;
       padding: 20px var(--pad) 18px;
       display: flex;
@@ -168,7 +167,6 @@
 
     .wrap {
       width: min(var(--max), 100%);
-      min-width: 980px;
       margin: 0 auto;
       padding: 0 var(--pad) 96px;
     }
@@ -257,14 +255,15 @@
       line-break: loose;
     }
 
-    /* 썸네일: 카드 중앙 */
+    /* 썸네일: 본문 글자 너비와 동일 칼럼 */
     .thumb {
       display: block;
-      width: 42%;
-      max-width: 420px;
+      box-sizing: border-box;
+      width: calc(100% - (var(--pad) * 2));
+      max-width: none;
       aspect-ratio: 1 / 1;
       object-fit: cover;
-      margin: 0 auto 20px;
+      margin: 4px var(--pad) 16px;
       border-radius: 12px;
       background: #0f141b;
       border: 1px solid var(--line);
