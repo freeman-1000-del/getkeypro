@@ -437,6 +437,32 @@
       border-top: 1px solid var(--line);
     }
 
+    /* 시황분석: 증권소설 바로가기 (스크롤 따라다님) */
+    .fab-novel {
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      z-index: 40;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #111;
+      background: #f0c14a;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fab-novel:active {
+      transform: scale(0.97);
+    }
+    .fab-novel[hidden] {
+      display: none !important;
+    }
+
     /* 모바일: 화면 가로 최대 활용 · 한 줄에 글자 더 보이게 */
     @media (max-width: 720px) {
       :root {
@@ -556,6 +582,7 @@
     <div id="feed" class="state">불러오는 중…</div>
     <footer class="note">본 페이지는 정보 제공 목적이며 투자 권유가 아닙니다.</footer>
   </div>
+  <button type="button" id="fabNovel" class="fab-novel" aria-label="증권소설 바로가기">증권소설</button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -601,6 +628,8 @@
           var b = btns[bi];
           b.classList.toggle("is-on", b.getAttribute("data-view") === viewMode);
         }
+        var fab = document.getElementById("fabNovel");
+        if (fab) fab.hidden = viewMode === "novel";
         feed.innerHTML = '<div class="state">불러오는 중…</div>';
         load();
       }
@@ -611,6 +640,13 @@
           btns[bi].addEventListener("click", function (ev) {
             var m = ev.currentTarget.getAttribute("data-view");
             setView(m);
+          });
+        }
+        var fab = document.getElementById("fabNovel");
+        if (fab) {
+          fab.addEventListener("click", function () {
+            setView("novel");
+            window.scrollTo(0, 0);
           });
         }
       })();
