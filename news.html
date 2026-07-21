@@ -37,9 +37,9 @@
       --accent-dim: rgba(61, 214, 140, 0.14);
       --nav: #1a1f27;
       --shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-      --pad: 20px;
+      --pad: 32px;
       --radius: 18px;
-      --max: 720px;
+      --max: 1100px;
     }
 
     * { box-sizing: border-box; }
@@ -47,6 +47,8 @@
     html, body {
       margin: 0;
       padding: 0;
+      min-width: 980px;
+      overflow-x: auto;
       background:
         radial-gradient(1200px 500px at 50% -10%, rgba(61, 214, 140, 0.07), transparent 55%),
         var(--bg);
@@ -121,6 +123,7 @@
 
     .wrap {
       width: min(var(--max), 100%);
+      min-width: 980px;
       margin: 0 auto;
       padding: 0 var(--pad) 96px;
     }
@@ -209,11 +212,11 @@
       line-break: loose;
     }
 
-    /* 썸네일: 카드 중앙, 적당한 크기 */
+    /* 썸네일: 카드 중앙 */
     .thumb {
       display: block;
-      width: 72%;
-      max-width: 340px;
+      width: 42%;
+      max-width: 420px;
       aspect-ratio: 1 / 1;
       object-fit: cover;
       margin: 0 auto 20px;
@@ -225,18 +228,18 @@
       display: none;
     }
 
-    /* 본문: 소타이틀=골드, 격언=하늘색. 모바일에서 어절 중간 끊김 방지 */
+    /* 본문: PC 폭 기준. 소타이틀=골드, 격언=하늘색 */
     .body,
     .body-half {
       font-size: 18px;
-      line-height: 1.45;
+      line-height: 1.65;
       color: #d8dee6;
       padding: 0 var(--pad) 28px;
       margin: 0;
       text-align: left;
       word-break: keep-all;
-      overflow-wrap: normal;
-      word-wrap: normal;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
       line-break: strict;
       hyphens: none;
     }
@@ -311,28 +314,6 @@
     }
     .body .novel-thumbs img.thumb-broken {
       display: none;
-    }
-    @media (max-width: 640px) {
-      .body,
-      .body-half,
-      .body .seg,
-      .body .seg-proverb {
-        font-size: 17px;
-        line-height: 1.45;
-        word-break: keep-all;
-        overflow-wrap: normal;
-        word-wrap: normal;
-        line-break: strict;
-        hyphens: none;
-      }
-      .body .seg {
-        margin-bottom: 0.65em;
-      }
-      .body .seg-gap {
-        height: 0.4em;
-        min-height: 0.4em;
-        margin: 0.15em 0;
-      }
     }
     .mk-table-wrap {
       margin: 12px var(--pad) 20px;
