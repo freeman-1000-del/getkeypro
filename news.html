@@ -69,9 +69,18 @@
       box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
       margin: 0 0 28px;
       padding: 0;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+      will-change: transform;
+    }
+    /* 아래로 스크롤해 글 읽을 때 위로 숨김 · 위로 올리면 다시 표시 */
+    header.brand.is-hidden {
+      transform: translateY(-110%);
+      box-shadow: none;
+      pointer-events: none;
     }
     header.brand .nav-inner {
       width: min(var(--max), 100%);
+      min-width: 980px;
       margin: 0 auto;
       padding: 20px var(--pad) 18px;
       display: flex;
@@ -410,8 +419,8 @@
       .body-half { padding-left: 28px; padding-right: 28px; }
       .ad-slot { margin-left: 28px; margin-right: 28px; }
       .thumb {
-        width: 78%;
-        max-width: 360px;
+        width: 42%;
+        max-width: 420px;
         margin-bottom: 18px;
       }
     }
