@@ -302,10 +302,9 @@
     .body .novel-thumbs img {
       flex: 0 0 auto;
       width: 264px;
-      max-width: 264px;
-      height: 264px;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
       border-radius: 8px;
       background: #0f141b;
       border: 1px solid var(--line);
@@ -443,7 +442,7 @@
       <a class="logo" href="./news.html">
         <img src="./moneykey-logo.png" alt="머니키 리포트" width="1024" height="277" />
       </a>
-      <p>내 손 안에 펼쳐지는 경제</p>
+      <p>주식시장 생존의 법칙</p>
     </div>
     <h1 class="sr-only">머니키 리포트</h1>
   </header>
@@ -758,7 +757,7 @@
         var nimgBuf = [];
         function flushNimg() {
           if (!nimgBuf.length) return;
-          var imgs = nimgBuf.slice(0, 3).map(function (u) {
+          var imgs = nimgBuf.map(function (u) {
             return (
               '<img src="' +
               esc(u) +
