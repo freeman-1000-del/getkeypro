@@ -249,12 +249,12 @@
       text-align: left;
     }
     .body .seg {
-      margin: 0 0 0.12em;
+      margin: 0 0 0.7em;
       padding: 0;
       color: #d8dee6;
       font-weight: 400;
       font-size: 1em;
-      line-height: 1.45;
+      line-height: 1.55;
       text-align: left;
       white-space: normal;
       word-break: keep-all;
@@ -263,14 +263,7 @@
       line-break: strict;
       hyphens: none;
     }
-    /* 증권소설: 원문 줄바꿈은 <br>, 문단만 나눔 — 줄마다 큰 여백 금지 */
-    .body .seg-novel {
-      margin: 0 0 0.55em;
-      line-height: 1.5;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-    }
-    /* 원문 빈 줄 → 짧은 문단 간격 */
+    /* 원문 빈 줄 → 문단 사이만 살짝 */
     .body .seg-gap {
       display: block;
       margin: 0.2em 0;
@@ -333,7 +326,7 @@
         hyphens: none;
       }
       .body .seg {
-        margin-bottom: 0.1em;
+        margin-bottom: 0.65em;
       }
       .body .seg-gap {
         height: 0.4em;
@@ -762,8 +755,7 @@
 
         var out = [];
         var nimgBuf = [];
-        var inNovelOut = false;
-        var novelBuf = [];
+        var paraBuf = [];
         function flushNimg() {
           if (!nimgBuf.length) return;
           var imgs = nimgBuf.map(function (u) {
@@ -776,23 +768,22 @@
           out.push('<div class="novel-thumbs">' + imgs + "</div>");
           nimgBuf = [];
         }
-        function flushNovel() {
-          if (!novelBuf.length) return;
-          out.push(
-            '<p class="seg seg-novel">' + novelBuf.join("<br>") + "</p>"
-          );
-          novelBuf = [];
+        function flushPara() {
+          if (!paraBuf.length) return;
+          // 연속 줄 = 한 문단(<br>). 빈 줄(gap)에서만 문단을 끊음.
+          out.push('<p class="seg">' + paraBuf.join("<br>") + "</p>");
+          paraBuf = [];
         }
         for (var oi = 0; oi < tokens.length; oi++) {
           var tok = tokens[oi];
           if (tok.k === "nimg") {
-            flushNovel();
+            flushPara();
             nimgBuf.push(tok.v);
             continue;
           }
           flushNimg();
           if (tok.k === "cimg") {
-            flushNovel();
+            flushPara();
             var rawC = String(tok.v || "");
             var curl = rawC;
             var ccap = "";
@@ -817,32 +808,24 @@
             continue;
           }
           if (tok.k === "label") {
-            flushNovel();
-            inNovelOut = tok.v === "[증권소설]";
+            flushPara();
             out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
             continue;
           }
           if (tok.k === "proverb") {
-            flushNovel();
-            inNovelOut = false;
+            flushPara();
             out.push('<p class="seg-proverb">' + tok.v + "</p>");
             continue;
           }
           if (tok.k === "gap") {
-            if (inNovelOut) flushNovel();
+            flushPara();
             out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
             continue;
           }
-          // text
-          if (inNovelOut) {
-            novelBuf.push(tok.v);
-          } else {
-            flushNovel();
-            out.push('<p class="seg">' + esc(tok.v) + "</p>");
-          }
+          paraBuf.push(tok.v);
         }
         flushNimg();
-        flushNovel();
+        flushPara();
         return '<div class="body">' + out.join("") + "</div>";
       }
 
