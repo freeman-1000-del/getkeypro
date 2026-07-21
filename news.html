@@ -258,12 +258,19 @@
       text-align: left;
       white-space: normal;
       word-break: keep-all;
-      overflow-wrap: normal;
-      word-wrap: normal;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
       line-break: strict;
       hyphens: none;
     }
-    /* 원문 빈 줄 → 눈에 띄는 문단 간격 */
+    /* 증권소설: 원문 줄바꿈은 <br>, 문단만 나눔 — 줄마다 큰 여백 금지 */
+    .body .seg-novel {
+      margin: 0 0 0.55em;
+      line-height: 1.5;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    /* 원문 빈 줄 → 짧은 문단 간격 */
     .body .seg-gap {
       display: block;
       margin: 0.2em 0;
@@ -755,6 +762,8 @@
 
         var out = [];
         var nimgBuf = [];
+        var inNovelOut = false;
+        var novelBuf = [];
         function flushNimg() {
           if (!nimgBuf.length) return;
           var imgs = nimgBuf.map(function (u) {
@@ -767,14 +776,23 @@
           out.push('<div class="novel-thumbs">' + imgs + "</div>");
           nimgBuf = [];
         }
+        function flushNovel() {
+          if (!novelBuf.length) return;
+          out.push(
+            '<p class="seg seg-novel">' + novelBuf.join("<br>") + "</p>"
+          );
+          novelBuf = [];
+        }
         for (var oi = 0; oi < tokens.length; oi++) {
           var tok = tokens[oi];
           if (tok.k === "nimg") {
+            flushNovel();
             nimgBuf.push(tok.v);
             continue;
           }
           flushNimg();
           if (tok.k === "cimg") {
+            flushNovel();
             var rawC = String(tok.v || "");
             var curl = rawC;
             var ccap = "";
@@ -798,12 +816,33 @@
             }
             continue;
           }
-          if (tok.k === "label") out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
-          else if (tok.k === "proverb") out.push('<p class="seg-proverb">' + tok.v + "</p>");
-          else if (tok.k === "gap") out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
-          else out.push('<p class="seg">' + tok.v + "</p>");
+          if (tok.k === "label") {
+            flushNovel();
+            inNovelOut = tok.v === "[증권소설]";
+            out.push('<p class="seg-label">' + esc(tok.v) + "</p>");
+            continue;
+          }
+          if (tok.k === "proverb") {
+            flushNovel();
+            inNovelOut = false;
+            out.push('<p class="seg-proverb">' + tok.v + "</p>");
+            continue;
+          }
+          if (tok.k === "gap") {
+            if (inNovelOut) flushNovel();
+            out.push('<p class="seg-gap" aria-hidden="true">&nbsp;</p>');
+            continue;
+          }
+          // text
+          if (inNovelOut) {
+            novelBuf.push(tok.v);
+          } else {
+            flushNovel();
+            out.push('<p class="seg">' + esc(tok.v) + "</p>");
+          }
         }
         flushNimg();
+        flushNovel();
         return '<div class="body">' + out.join("") + "</div>";
       }
 
