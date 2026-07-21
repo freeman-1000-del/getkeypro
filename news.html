@@ -521,9 +521,8 @@
           var b = btns[bi];
           b.classList.toggle("is-on", b.getAttribute("data-view") === viewMode);
         }
-        if (cachedRows && cachedRows.length) {
-          feed.innerHTML = cachedRows.map(cardHtml).join("");
-        }
+        feed.innerHTML = '<div class="state">불러오는 중…</div>';
+        load();
       }
 
       (function bindSubTabs() {
@@ -980,7 +979,7 @@
         var dateLabel = sess
           ? fmtSessionLabel(sess, body.indexOf("【뉴욕증시") >= 0 ? "preopen" : "close")
           : fmtDate(row.created_at);
-        var showThumb = viewMode !== "novel" && !!img;
+        var showThumb = !!img;
         return (
           '<article class="card">' +
           '<div class="meta"><span class="session-date">' +
@@ -989,7 +988,7 @@
           (showThumb
             ? '<img class="thumb" src="' + esc(img) + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + esc(String(row.id || "").slice(0, 8)) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
             : "") +
-          (viewMode !== "novel" ? adBox("썸네일 바로 아래") : "") +
+          adBox("썸네일 바로 아래") +
           "<h2>" + esc(title) + "</h2>" +
           bodyWithMidAd(body, title) +
           "</article>"
@@ -1008,13 +1007,19 @@
         while (attempt < 3) {
           attempt += 1;
           try {
-            // 1) 본문만 먼저 (대용량 data-URI 썸네일 제외 → 타임아웃 방지)
-            var res = await client
+            // 1) 본문만 먼저 — 탭별 카테고리 분리
+            var wantNovel = viewMode === "novel";
+            var q = client
               .from(table)
               .select("id,title,body,category,created_at")
-              .eq("category", "주식")
               .order("created_at", { ascending: false })
-              .limit(20);
+              .limit(30);
+            if (wantNovel) {
+              q = q.eq("category", "증권소설");
+            } else {
+              q = q.in("category", ["시황분석", "주식"]);
+            }
+            var res = await q;
             if (res.error) throw res.error;
             var rows = res.data || [];
             var picked = [];
@@ -1022,19 +1027,24 @@
               var row = rows[i];
               var t = String(row.title || "");
               var b = String(row.body || "");
+              var cat = String(row.category || "");
               if (t.indexOf("__probe__") >= 0) continue;
-              if (t.indexOf("외 1건") >= 0) continue; // 옛 기사형 폐기
+              if (t.indexOf("외 1건") >= 0) continue;
               if (t.indexOf("[삭제예정]") >= 0) continue;
-              // 가상 '금일'만 있고 당일/전일 구조가 없으면 스킵(옛 샘플)
+              if (wantNovel) {
+                if (cat !== "증권소설" && b.indexOf("[증권소설]") < 0) continue;
+                picked.push(row);
+                break;
+              }
+              if (cat === "증권소설") continue;
               if (b.indexOf("【금일 시황") >= 0 && b.indexOf("【당일 시황") < 0
                   && b.indexOf("【전일 시황") < 0 && b.indexOf("【근일 시황") < 0
                   && b.indexOf("【직전 시황") < 0
                   && b.indexOf("[시황]") < 0) {
                 continue;
               }
-              // 신규 5칸 형식([시황] 등) 또는 옛 마커 있으면 OK
               var hasNew = b.indexOf("[시황]") >= 0 || b.indexOf("[증시 총평]") >= 0
-                || b.indexOf("[증시 단상]") >= 0 || b.indexOf("[증권소설]") >= 0
+                || b.indexOf("[증시 단상]") >= 0
                 || b.indexOf("[끝마치며]") >= 0
                 || b.indexOf("【시황】") >= 0;
               var hasOld = b.indexOf("【금일 시황") >= 0 || b.indexOf("【당일 시황") >= 0
@@ -1043,11 +1053,13 @@
                 || b.indexOf("«REVIEW»") >= 0;
               if (!hasNew && !hasOld) continue;
               picked.push(row);
-              break; // 최신 시황 1건
+              break;
             }
             if (!picked.length) {
               cachedRows = null;
-              feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
+              feed.innerHTML = wantNovel
+                ? '<div class="state">아직 발행된 증권소설이 없습니다.</div>'
+                : '<div class="state">아직 발행된 시황분석이 없습니다.</div>';
               return;
             }
             cachedRows = picked;
