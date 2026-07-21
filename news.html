@@ -172,7 +172,9 @@
     .wrap {
       width: min(var(--max), 100%);
       margin: 0 auto;
-      padding: 0 var(--pad) 96px;
+      /* 좌우 패딩은 카드·본문만 — wrap에 또 주면 폭이 이중으로 줄어 깨짐 */
+      padding: 0 0 96px;
+      box-sizing: border-box;
     }
 
     /* —— 블로그 포스팅 카드 —— */
