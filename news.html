@@ -440,55 +440,84 @@
       border-top: 1px solid var(--line);
     }
 
-    /* 모바일: 전체 폭 · 강제 줄바꿈 이중접힘 방지(JS에서 br→공백) */
+    /* 모바일: 화면 가로 최대 활용 · 한 줄에 글자 더 보이게 */
     @media (max-width: 720px) {
       :root {
-        --pad: 16px;
+        --pad: 10px;
         --max: 100%;
         --radius: 0;
       }
       html, body {
         overflow-x: hidden;
+        width: 100%;
       }
       header.brand {
         width: 100%;
-        margin: 0 0 16px;
+        max-width: 100%;
+        margin: 0 0 12px;
         border-radius: 0;
         border-left: none;
         border-right: none;
       }
+      header.brand .nav-inner {
+        padding: 10px var(--pad) 10px;
+      }
+      header.brand .logo img {
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
       .wrap {
         width: 100%;
-        padding: 0 0 72px;
+        max-width: 100%;
+        padding: 0 0 64px;
       }
       .card {
         border-radius: 0;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+        border-left: none;
+        border-right: none;
+      }
+      .card .meta,
+      .card h2,
+      .body,
+      .body-half {
+        padding-left: var(--pad);
+        padding-right: var(--pad);
       }
       .body,
       .body-half,
       .body .seg,
       .body .seg-proverb {
-        font-size: 16px;
-        line-height: 1.65;
+        font-size: 15px;
+        line-height: 1.6;
+        letter-spacing: -0.02em;
         word-break: keep-all;
-        overflow-wrap: break-word;
+        overflow-wrap: anywhere;
       }
       .card h2 {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
+        padding-top: 10px;
+        padding-bottom: 10px;
       }
       .thumb {
         width: calc(100% - (var(--pad) * 2));
         max-width: none;
-        margin: 4px var(--pad) 14px;
+        margin: 2px var(--pad) 12px;
         aspect-ratio: 1 / 1;
       }
+      .body .novel-thumbs {
+        gap: 6px;
+      }
       .body .novel-thumbs img {
-        width: min(100%, 280px);
+        width: min(100%, 100%);
+        max-width: 100%;
+      }
+      header.brand .sub-tabs {
+        gap: 4px;
       }
       header.brand .sub-tabs button {
-        font-size: 15px;
-        padding: 7px 14px;
+        font-size: 14px;
+        padding: 6px 12px;
       }
     }
 
