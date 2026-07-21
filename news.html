@@ -888,6 +888,24 @@
             var hn = String(hook || "").replace(/[.\s]+$/g, "").trim();
             if (titleNorm && hn && (hn === titleNorm || titleNorm.indexOf(hn) === 0)) continue;
           }
+          // ## [제목] 원문 마크다운 — 카드 제목과 중복이면 숨김
+          var mdHead = String(line || "").trim().match(/^#{1,6}\s+(.+)$/);
+          if (mdHead) {
+            var mdInner = String(mdHead[1] || "")
+              .replace(/^[\[【]\s*/, "")
+              .replace(/\s*[\]】]$/, "")
+              .replace(/[.\s]+$/g, "")
+              .trim();
+            if (
+              titleNorm &&
+              mdInner &&
+              (mdInner === titleNorm ||
+                titleNorm.indexOf(mdInner) === 0 ||
+                mdInner.indexOf(titleNorm) === 0)
+            ) {
+              continue;
+            }
+          }
           var split2 = splitLeadingLabel(line);
           if (split2) {
             tokens.push({ k: "label", v: split2.label });
@@ -1103,7 +1121,8 @@
         var dateLabel = sess
           ? fmtSessionLabel(sess, body.indexOf("【뉴욕증시") >= 0 ? "preopen" : "close")
           : fmtDate(row.created_at);
-        var showThumb = !!img;
+        // 증권소설: 본문 «NIMG»만. 카드 상단 큰 썸네일은 중복이라 숨김.
+        var showThumb = !!img && viewMode !== "novel";
         return (
           '<article class="card">' +
           '<div class="meta"><span class="session-date">' +
@@ -1113,7 +1132,8 @@
             ? '<img class="thumb" src="' + esc(img) + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + esc(String(row.id || "").slice(0, 8)) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
             : "") +
           adBox("썸네일 바로 아래") +
-          "<h2>" + esc(title) + "</h2>" +
+          // 증권소설: 탭·본문 소제목으로 충분. 카드 h2 중복 제거.
+          (viewMode === "novel" ? "" : "<h2>" + esc(title) + "</h2>") +
           bodyWithMidAd(body, title) +
           "</article>"
         );
@@ -1191,6 +1211,9 @@
             feed.innerHTML = picked.map(function (r) {
               return cardHtml(Object.assign({}, r, { image_url: "" }));
             }).join("");
+
+            // 증권소설은 상단 썸네일 미사용(본문 NIMG만)
+            if (wantNovel) return;
 
             // 2) 썸네일만 별도 조회 (data-URI·초대형 이미지는 스킵)
             var ids = picked.map(function (r) { return r.id; });
