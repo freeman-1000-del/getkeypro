@@ -129,6 +129,43 @@
       text-align: center;
       max-width: none;
     }
+    /* 서브제목: 시황분석 | 증권소설 */
+    header.brand .sub-tabs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0;
+      flex-wrap: wrap;
+    }
+    header.brand .sub-tabs button {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: transparent;
+      color: var(--sub);
+      font: inherit;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      padding: 8px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    header.brand .sub-tabs button:hover {
+      color: var(--txt);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    header.brand .sub-tabs button.is-on {
+      color: #0d1117;
+      background: #d4af37;
+      border-color: #d4af37;
+    }
+    header.brand .sub-tabs .sub-sep {
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 16px;
+      user-select: none;
+    }
 
     .wrap {
       width: min(var(--max), 100%);
@@ -432,7 +469,11 @@
       <a class="logo" href="./news.html">
         <img src="./moneykey-logo.png" alt="머니키 리포트" width="1024" height="277" />
       </a>
-      <p>주식시장 생존의 법칙</p>
+      <nav class="sub-tabs" aria-label="콘텐츠 구분">
+        <button type="button" data-view="analysis" class="is-on">시황분석</button>
+        <span class="sub-sep" aria-hidden="true">|</span>
+        <button type="button" data-view="novel">증권소설</button>
+      </nav>
     </div>
     <h1 class="sr-only">머니키 리포트</h1>
   </header>
@@ -444,8 +485,56 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
+      var hdr = document.querySelector("header.brand");
+      if (!hdr) return;
+      var lastY = window.scrollY || 0;
+      var ticking = false;
+      window.addEventListener(
+        "scroll",
+        function () {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function () {
+            var y = window.scrollY || 0;
+            if (y > lastY + 4 && y > 64) hdr.classList.add("is-hidden");
+            else if (y < lastY - 2) hdr.classList.remove("is-hidden");
+            if (y <= 24) hdr.classList.remove("is-hidden");
+            lastY = y;
+            ticking = false;
+          });
+        },
+        { passive: true }
+      );
+    })();
+  </script>
+  <script>
+    (function () {
       var cfg = window.MONEYKEY_CONFIG || {};
       var feed = document.getElementById("feed");
+      var viewMode = "analysis";
+      var cachedRows = null;
+
+      function setView(mode) {
+        viewMode = mode === "novel" ? "novel" : "analysis";
+        var btns = document.querySelectorAll("header.brand .sub-tabs button");
+        for (var bi = 0; bi < btns.length; bi++) {
+          var b = btns[bi];
+          b.classList.toggle("is-on", b.getAttribute("data-view") === viewMode);
+        }
+        if (cachedRows && cachedRows.length) {
+          feed.innerHTML = cachedRows.map(cardHtml).join("");
+        }
+      }
+
+      (function bindSubTabs() {
+        var btns = document.querySelectorAll("header.brand .sub-tabs button");
+        for (var bi = 0; bi < btns.length; bi++) {
+          btns[bi].addEventListener("click", function (ev) {
+            var m = ev.currentTarget.getAttribute("data-view");
+            setView(m);
+          });
+        }
+      })();
 
       function esc(s) {
         return String(s || "")
@@ -743,6 +832,31 @@
           tokens = tokens.slice(0, insertAt).concat(prToks).concat(tokens.slice(insertAt));
         }
 
+        // 시황분석 / 증권소설 탭에 맞게 구간만 남김
+        (function filterByView() {
+          var mode = viewMode === "novel" ? "novel" : "analysis";
+          var kept = [];
+          var inNovel = false;
+          for (var fi = 0; fi < tokens.length; fi++) {
+            var ft = tokens[fi];
+            if (ft.k === "label") {
+              inNovel = ft.v === "[증권소설]";
+              if (mode === "novel") {
+                if (inNovel) kept.push(ft);
+              } else if (!inNovel) {
+                kept.push(ft);
+              }
+              continue;
+            }
+            if (mode === "novel") {
+              if (inNovel) kept.push(ft);
+            } else if (!inNovel) {
+              kept.push(ft);
+            }
+          }
+          tokens = kept;
+        })();
+
         var out = [];
         var nimgBuf = [];
         var paraBuf = [];
@@ -866,15 +980,16 @@
         var dateLabel = sess
           ? fmtSessionLabel(sess, body.indexOf("【뉴욕증시") >= 0 ? "preopen" : "close")
           : fmtDate(row.created_at);
+        var showThumb = viewMode !== "novel" && !!img;
         return (
           '<article class="card">' +
           '<div class="meta"><span class="session-date">' +
           esc(dateLabel) +
           "</span></div>" +
-          (img
+          (showThumb
             ? '<img class="thumb" src="' + esc(img) + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + esc(String(row.id || "").slice(0, 8)) + '" alt="' + esc(title) + '" loading="lazy" onerror="this.classList.add(\'thumb-broken\');this.removeAttribute(\'alt\');" />'
             : "") +
-          adBox("썸네일 바로 아래") +
+          (viewMode !== "novel" ? adBox("썸네일 바로 아래") : "") +
           "<h2>" + esc(title) + "</h2>" +
           bodyWithMidAd(body, title) +
           "</article>"
@@ -931,9 +1046,11 @@
               break; // 최신 시황 1건
             }
             if (!picked.length) {
+              cachedRows = null;
               feed.innerHTML = '<div class="state">아직 발행된 리포트가 없습니다.</div>';
               return;
             }
+            cachedRows = picked;
             // 이미지 없이 먼저 렌더
             feed.innerHTML = picked.map(function (r) {
               return cardHtml(Object.assign({}, r, { image_url: "" }));
@@ -954,6 +1071,7 @@
                 byId[r.id] = u;
               });
               picked.forEach(function (r) { r.image_url = byId[r.id] || ""; });
+              cachedRows = picked;
               feed.innerHTML = picked.map(cardHtml).join("");
             }
             return;
